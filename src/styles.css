@@ -2378,8 +2378,19 @@ textarea.review-input {
 }
 
 .flashcard.has-figure {
-  height: min(640px, 86vh);
-  min-height: 480px;
+  height: min(720px, 88vh);
+  min-height: 520px;
+}
+
+.flashcard.has-figure .flashcard-face {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 12px 10px;
+}
+
+.flashcard.has-figure .face-section {
+  display: none;
 }
 
 .flashcard {
@@ -2505,6 +2516,10 @@ textarea.review-input {
 
 .card-figure {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
   color: var(--text);
 }
 
@@ -2512,11 +2527,16 @@ textarea.review-input {
   display: block;
   width: 100%;
   height: auto;
+  max-height: 300px;
 }
 
 .face-text-with-figure {
-  font-size: 15px;
+  flex: 0 0 auto;
+  width: 100%;
+  font-size: 14px;
   font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
 }
 
 .flashcard-inner {

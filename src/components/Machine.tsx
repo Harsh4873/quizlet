@@ -177,7 +177,7 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '1', bend: -18 },
-        { from: 'q1', to: 'q0', label: '0', bend: -18 },
+        { from: 'q1', to: 'q0', label: '0', bend: 18 },
       ]}
       loops={[
         { id: 'q0', label: '0', side: 'below' },
@@ -197,7 +197,7 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '0', bend: -18 },
-        { from: 'q1', to: 'q0', label: '1', bend: -18 },
+        { from: 'q1', to: 'q0', label: '1', bend: 18 },
       ]}
       loops={[
         { id: 'q0', label: '1', side: 'below' },
@@ -234,7 +234,7 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '1', bend: -18 },
-        { from: 'q1', to: 'q0', label: '1', bend: -18 },
+        { from: 'q1', to: 'q0', label: '1', bend: 18 },
       ]}
       loops={[
         { id: 'q0', label: '0', side: 'below' },
@@ -254,7 +254,7 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '1', bend: -18 },
-        { from: 'q1', to: 'q0', label: '1', bend: -18 },
+        { from: 'q1', to: 'q0', label: '1', bend: 18 },
       ]}
       loops={[
         { id: 'q0', label: '0', side: 'below' },
@@ -269,12 +269,12 @@ const FIGURES: Record<string, ReactNode> = {
       height={140}
       start="q0"
       nodes={[
-        { id: 'q0', x: 70, y: 60, label: 'q0', accept: true, note: 'even' },
-        { id: 'q1', x: 210, y: 60, label: 'q1', note: 'odd' },
+        { id: 'q0', x: 70, y: 60, label: 'q0', accept: true },
+        { id: 'q1', x: 210, y: 60, label: 'q1' },
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '0, 1', bend: -16 },
-        { from: 'q1', to: 'q0', label: '0, 1', bend: -16 },
+        { from: 'q1', to: 'q0', label: '0, 1', bend: 16 },
       ]}
     />
   ),
@@ -282,23 +282,23 @@ const FIGURES: Record<string, ReactNode> = {
     <Machine
       aria="Four-state product. q0 even length even ones, start. q2 even length odd ones, accept. 1 moves sideways. 0 moves up and down."
       width={340}
-      height={210}
+      height={250}
       start="q0"
       nodes={[
-        { id: 'q0', x: 90, y: 55, label: 'q0', note: 'even, even' },
-        { id: 'q1', x: 250, y: 55, label: 'q1', note: 'odd, odd' },
-        { id: 'q3', x: 90, y: 155, label: 'q3', note: 'odd, even' },
-        { id: 'q2', x: 250, y: 155, label: 'q2', accept: true, note: 'even, odd' },
+        { id: 'q0', x: 90, y: 70, label: 'q0' },
+        { id: 'q1', x: 250, y: 70, label: 'q1' },
+        { id: 'q3', x: 90, y: 165, label: 'q3' },
+        { id: 'q2', x: 250, y: 165, label: 'q2', accept: true },
       ]}
       links={[
         { from: 'q0', to: 'q1', label: '1', bend: -16 },
-        { from: 'q1', to: 'q0', label: '1', bend: -16 },
+        { from: 'q1', to: 'q0', label: '1', bend: 16 },
         { from: 'q3', to: 'q2', label: '1', bend: 16 },
-        { from: 'q2', to: 'q3', label: '1', bend: 16 },
+        { from: 'q2', to: 'q3', label: '1', bend: -16 },
         { from: 'q0', to: 'q3', label: '0', bend: -16 },
-        { from: 'q3', to: 'q0', label: '0', bend: -16 },
+        { from: 'q3', to: 'q0', label: '0', bend: 16 },
         { from: 'q1', to: 'q2', label: '0', bend: 16 },
-        { from: 'q2', to: 'q1', label: '0', bend: 16 },
+        { from: 'q2', to: 'q1', label: '0', bend: -16 },
       ]}
     />
   ),
@@ -380,12 +380,12 @@ const FIGURES: Record<string, ReactNode> = {
       height={140}
       start="q0"
       nodes={[
-        { id: 'q0', x: 70, y: 60, label: 'q0', note: 'even' },
-        { id: 'q1', x: 210, y: 60, label: 'q1', accept: true, note: 'odd' },
+        { id: 'q0', x: 70, y: 70, label: 'q0' },
+        { id: 'q1', x: 210, y: 70, label: 'q1', accept: true },
       ]}
       links={[
         { from: 'q0', to: 'q1', label: `0/1, ${e}`, bend: -16 },
-        { from: 'q1', to: 'q0', label: `0/1, ${e}`, bend: -16 },
+        { from: 'q1', to: 'q0', label: `0/1, ${e}`, bend: 16 },
       ]}
     />
   ),
