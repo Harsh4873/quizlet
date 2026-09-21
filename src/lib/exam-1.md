@@ -131,3 +131,45 @@ A: B = B+ exactly when BB ⊆ B. One copy is always in B+. If two copies stay in
 
 Q: What goes wrong if a proof only says three copies equal two copies?
 A: That is not the subset condition BB ⊆ B, and it is not true of an arbitrary B. It does not prove either direction.
+
+Q: What are the three different empty things?
+A: ε is one string, the empty string, length 0. ∅ is a language with no strings. {ε} is a language with exactly one string, and that string is ε.
+
+Q: When does a DFA accept ε?
+A: Only if the start state is an accept state. No symbol has been read yet, so the machine is still at the start.
+
+Q: Draw a DFA for the empty language.
+A: The start state is not accept, and it has no arrows out. ε dies, and so does every other string. [[fig:dfa-empty]]
+
+Q: Draw a DFA whose only string is ε.
+A: The start state is accept. Any real symbol leaves into a rejecting sink and stays there. [[fig:dfa-eps]]
+
+Q: On an NFA, is an ε-arrow the same as accepting the empty string?
+A: No. An ε-arrow is a free jump that reads nothing. The NFA accepts ε only when some path of those jumps reaches an accept state before any symbol is read.
+
+Q: Does gluing two NFAs with ε-arrows put ε in the union?
+A: Not by itself. The new ε-arrows only choose a machine. ε is in the union only if it was already accepted by one of the two machines.
+
+Q: Which of these accept the empty string: even length, odd length, at least three 1s, same first and last, middle 0, palindrome, empty set?
+A: Even length accepts ε, because length 0 is even. Palindromes accept ε. The others reject it. The empty set rejects every string, including ε.
+
+Q: How do you draw a PDA that accepts only ε?
+A: Take an ε-arrow from the start into an accept state, and give real symbols no accepting run. That language is {ε}, not the empty set. The empty-set drawing has no accept state and no arrows.
+
+Q: Grammar rule S → ε versus a grammar with no useful rule.
+A: S → ε builds the language {ε}. A start variable with no rule that builds a string builds the empty language. Writing ε on the right-hand side is not the same as having no strings.
+
+Q: Does a star in a regex include the empty string?
+A: Yes. A* means zero or more copies, and zero copies is ε. The empty-set regex matches nothing, not even ε.
+
+Q: How do you complement a DFA?
+A: Keep every state and every arrow. Swap which states are accept. The DFA must be complete, because a missing arrow is a hidden reject sink and has to be swapped too.
+
+Q: What is the complement of the empty language, and of {ε}?
+A: The complement of ∅ is every string. The complement of {ε} is every nonempty string.
+
+Q: Which operations keep regular languages regular?
+A: Union, intersection, complement, concatenation, and star.
+
+Q: Which operations keep context-free languages context-free?
+A: Union, concatenation, star, and intersection with a regular language. Not intersection of two context-free languages. Not complement.

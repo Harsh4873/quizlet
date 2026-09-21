@@ -435,6 +435,31 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
     />
   ),
+  'dfa-empty': (
+    <Machine
+      aria="DFA for the empty language. Start q0 is not accept. No arrows, so every string dies, including epsilon."
+      width={180}
+      height={110}
+      start="q0"
+      nodes={[{ id: 'q0', x: 90, y: 55, label: 'q0' }]}
+    />
+  ),
+  'dfa-eps': (
+    <Machine
+      aria="DFA for the language whose only string is epsilon. q0 is start and accept. Any real symbol goes to q1, a rejecting sink."
+      width={280}
+      height={150}
+      start="q0"
+      nodes={[
+        { id: 'q0', x: 70, y: 70, label: 'q0', accept: true },
+        { id: 'q1', x: 210, y: 70, label: 'q1', note: 'sink' },
+      ]}
+      links={[
+        { from: 'q0', to: 'q1', label: '0, 1' },
+      ]}
+      loops={[{ id: 'q1', label: '0, 1', side: 'below' }]}
+    />
+  ),
   'pda-empty': (
     <Machine
       aria="Empty-set PDA. One start state q0, not accept, no arrows out."
