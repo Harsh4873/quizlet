@@ -1,0 +1,36 @@
+{
+  "name": "Quizlet — Exam flashcards",
+  "short_name": "Quizlet",
+  "description": "Exam flashcards with quiz, blanks, and match. Everything stays on this device.",
+  "id": "/quizlet/",
+  "start_url": "/quizlet/",
+  "scope": "/quizlet/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#121410",
+  "theme_color": "#121410",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/quizlet/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/quizlet/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Exam 1",
+      "short_name": "Exam 1",
+      "url": "/quizlet/#/set/exam-1-627/cards",
+      "icons": [{ "src": "/quizlet/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

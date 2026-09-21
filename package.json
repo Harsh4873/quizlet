@@ -1,0 +1,32 @@
+{
+  "name": "quizlet-exam-flashcards",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "audit:study": "vite-node scripts/audit-study-material.ts",
+    "test": "vitest run --exclude tests/firestore.rules.test.ts",
+    "test:rules": "npx --yes firebase-tools emulators:exec --project demo-research --only firestore \"vitest run tests/firestore.rules.test.ts --testTimeout=60000\"",
+    "deploy:rules": "npx --yes firebase-tools deploy --only firestore:rules --project pickledgerpro",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^12.16.0",
+    "lucide-react": "^0.468.0",
+    "pdfjs-dist": "^5.7.284",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

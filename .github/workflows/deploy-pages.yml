@@ -1,0 +1,96 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Set up Java for Firestore emulator
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Test Firestore security rules
+        run: npm run test:rules
+
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify Pages artifact
+        run: |
+          node --input-type=module <<'NODE'
+          import { existsSync, readFileSync } from 'node:fs';
+
+          const required = [
+            'dist/index.html',
+            'dist/favicon.svg',
+            'dist/apple-touch-icon.png',
+            'dist/icon-192.png',
+            'dist/icon-512.png',
+            'dist/manifest.webmanifest',
+            'dist/social-card.png',
+            'dist/sw.js',
+          ];
+          for (const path of required) {
+            if (!existsSync(path)) throw new Error(`Missing Pages artifact: ${path}`);
+          }
+
+          const html = readFileSync('dist/index.html', 'utf8');
+          if (!html.includes('/quizlet/assets/')) throw new Error('Built assets do not use the /quizlet/ base.');
+          if (!html.includes('/quizlet/manifest.webmanifest')) throw new Error('Manifest link does not use /quizlet/.');
+
+          const manifest = JSON.parse(readFileSync('dist/manifest.webmanifest', 'utf8'));
+          for (const field of ['id', 'start_url', 'scope']) {
+            if (manifest[field] !== '/quizlet/') throw new Error(`Manifest ${field} must be /quizlet/.`);
+          }
+          for (const icon of manifest.icons ?? []) {
+            if (!icon.src.startsWith('/quizlet/')) throw new Error(`Manifest icon escapes /quizlet/: ${icon.src}`);
+          }
+          NODE
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
