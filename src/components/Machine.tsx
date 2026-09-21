@@ -72,23 +72,13 @@ export function Machine({ aria, width, height, nodes, links = [], loops = [], st
           ly = my + Math.sign(bend) * 18;
         } else {
           const side = ux > 0.2 ? -1 : 1;
-          lx = midX + -uy * 18 * side;
-          ly = midY + ux * 18 * side;
+          lx = midX + -uy * 22 * side;
+          ly = midY + ux * 22 * side;
         }
         return (
           <g key={`${link.from}-${link.to}-${link.label}`}>
             <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" markerEnd={`url(#${markerId})`} />
-            <text
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              fill="currentColor"
-              fontSize="11"
-              fontWeight="600"
-              stroke="var(--panel)"
-              strokeWidth="4"
-              paintOrder="stroke fill"
-            >
+            <text x={lx} y={ly} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="600">
               {link.label}
             </text>
           </g>
@@ -99,23 +89,20 @@ export function Machine({ aria, width, height, nodes, links = [], loops = [], st
         if (!node) return null;
         const above = (loop.side ?? 'below') === 'above';
         const sign = above ? -1 : 1;
-        const d = `M ${node.x - 10} ${node.y + sign * (r - 2)}
-          C ${node.x - 36} ${node.y + sign * (r + 34)},
-            ${node.x + 36} ${node.y + sign * (r + 34)},
-            ${node.x + 12} ${node.y + sign * (r - 1)}`;
+        const d = `M ${node.x - 8} ${node.y + sign * (r - 1)}
+          C ${node.x - 28} ${node.y + sign * (r + 28)},
+            ${node.x + 28} ${node.y + sign * (r + 28)},
+            ${node.x + 10} ${node.y + sign * (r - 1)}`;
         return (
           <g key={`${loop.id}-${loop.label}`}>
             <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" markerEnd={`url(#${markerId})`} />
             <text
               x={node.x}
-              y={node.y + sign * (r + 52)}
+              y={node.y + sign * (r + 48)}
               textAnchor="middle"
               fill="currentColor"
-              fontSize="11"
+              fontSize="12"
               fontWeight="600"
-              stroke="var(--panel)"
-              strokeWidth="4"
-              paintOrder="stroke fill"
             >
               {loop.label}
             </text>
@@ -392,14 +379,14 @@ const FIGURES: Record<string, ReactNode> = {
   'pda-mid': (
     <Machine
       aria="PDA for odd length with middle 0. Push dollar, push X on the first half, read 0 as the middle, pop X, pop dollar to accept."
-      width={460}
-      height={150}
+      width={520}
+      height={210}
       start="q0"
       nodes={[
-        { id: 'q0', x: 46, y: 70, label: 'q0' },
-        { id: 'q1', x: 150, y: 70, label: 'q1' },
-        { id: 'q2', x: 270, y: 70, label: 'q2' },
-        { id: 'q3', x: 390, y: 70, label: 'q3', accept: true },
+        { id: 'q0', x: 70, y: 130, label: 'q0' },
+        { id: 'q1', x: 190, y: 130, label: 'q1' },
+        { id: 'q2', x: 320, y: 130, label: 'q2' },
+        { id: 'q3', x: 450, y: 130, label: 'q3', accept: true },
       ]}
       links={[
         { from: 'q0', to: 'q1', label: 'ε, ε → $' },
@@ -407,31 +394,31 @@ const FIGURES: Record<string, ReactNode> = {
         { from: 'q2', to: 'q3', label: 'ε, $ → ε' },
       ]}
       loops={[
-        { id: 'q1', label: '0/1, ε → X', side: 'above' },
-        { id: 'q2', label: '0/1, X → ε', side: 'above' },
+        { id: 'q1', label: 'push X', side: 'above' },
+        { id: 'q2', label: 'pop X', side: 'above' },
       ]}
     />
   ),
   'pda-pal': (
     <Machine
       aria="Palindrome PDA. Push dollar, push the real letters, guess the middle, pop only a match, pop dollar to accept."
-      width={460}
-      height={160}
+      width={520}
+      height={220}
       start="q0"
       nodes={[
-        { id: 'q0', x: 46, y: 78, label: 'q0' },
-        { id: 'q1', x: 150, y: 78, label: 'q1' },
-        { id: 'q2', x: 280, y: 78, label: 'q2' },
-        { id: 'q3', x: 400, y: 78, label: 'q3', accept: true },
+        { id: 'q0', x: 70, y: 140, label: 'q0' },
+        { id: 'q1', x: 190, y: 140, label: 'q1' },
+        { id: 'q2', x: 330, y: 140, label: 'q2' },
+        { id: 'q3', x: 450, y: 140, label: 'q3', accept: true },
       ]}
       links={[
         { from: 'q0', to: 'q1', label: 'ε, ε → $' },
-        { from: 'q1', to: 'q2', label: 'ε or 0/1' },
+        { from: 'q1', to: 'q2', label: 'guess mid' },
         { from: 'q2', to: 'q3', label: 'ε, $ → ε' },
       ]}
       loops={[
-        { id: 'q1', label: '0/1, ε → letter', side: 'above' },
-        { id: 'q2', label: '0,0→ε  1,1→ε', side: 'above' },
+        { id: 'q1', label: 'push', side: 'above' },
+        { id: 'q2', label: 'match', side: 'above' },
       ]}
     />
   ),

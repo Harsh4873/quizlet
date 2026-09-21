@@ -25,7 +25,7 @@ Q: What is the difference between p and n?
 A: p is the pumping length. n is a count inside a language, like the n in 0^n 1^n. Setting that count equal to p makes a legal long string. They are not the same variable.
 
 Q: Pumping is one-way. Name a language that can be pumped and is regular.
-A: Showing a pumped string leaves the language proves it is not regular. The other direction fails. 0* can be pumped and is regular.
+A: Showing a pumped string leaves the language proves it is not regular. The other direction fails. 0∗ can be pumped and is regular.
 
 Q: Use pumping to show {0^n 1^n 2^n} is not regular.
 A: Take s = 0^p 1^p 2^p. |xy| ≤ p forces y into the leading 0s. Pumping to i = 2 adds 0s and the three counts no longer match.
@@ -33,8 +33,8 @@ A: Take s = 0^p 1^p 2^p. |xy| ≤ p forces y into the leading 0s. Pumping to i =
 Q: What counts as three copies of one block over {a, b}?
 A: Pick one block w and glue it three times. w = a gives aaa. w = ab gives ababab. abab is only two copies, so it is out.
 
-Q: Where is the error in a proof that 0*1* is not regular?
-A: The proof pumps 0^p 1^p and says it cannot be pumped. That failure is for the equal-count language {0^n 1^n}, not for 0*1*. In 0*1* the counts need not match, and 000001111 is still in.
+Q: Where is the error in a proof that 0∗1∗ is not regular?
+A: The proof pumps 0^p 1^p and says it cannot be pumped. That failure is for the equal-count language {0^n 1^n}, not for 0∗1∗. In 0∗1∗ the counts need not match, and 000001111 is still in.
 
 Q: What does closed under intersection mean?
 A: If you take any two languages in the family, their overlap is still in the family.
@@ -100,13 +100,13 @@ Q: What has to be written above each PDA diagram?
 A: A short informal description: what the machine remembers, what it pushes, and when it accepts.
 
 Q: What are the three regex operations?
-A: A letter is a pattern. A ∪ B means or. A* means zero or more copies. Patterns written next to each other mean then.
+A: A letter is a pattern. A ∪ B means or. A∗ means zero or more copies. Patterns written next to each other mean then.
 
 Q: What does a grammar rule capital → … mean?
 A: The capital is a variable, a kind of string. The arrow says it may be rewritten as the right-hand side. A bar means or.
 
 Q: Regex or grammar for at least three 1s.
-A: Regex: 0*10*10*1(0 ∪ 1)*. Grammar: S → R1R1R1R and R → 0R | 1R | ε. Either one is enough. The stack is not needed.
+A: Regex: 0∗10∗10∗1(0 ∪ 1)∗. Grammar: S → R1R1R1R and R → 0R | 1R | ε. Either one is enough. The stack is not needed.
 
 Q: Grammar for strings that start and end with the same symbol.
 A: S → 0 | 1 | 0A0 | 1A1, and A → ε | 0A | 1A. The empty string is out. One symbol is in, because it starts and ends with itself.
@@ -124,7 +124,7 @@ Q: Grammar for the empty set. How is that different from the grammar for {ε}?
 A: The empty set has a start variable and no rule that builds a string. {ε} is the one rule S → ε.
 
 Q: Regex or grammar for even length and an odd number of 1s.
-A: Cut the string into pairs. E = 00 ∪ 11 keeps the 1-count even. O = 01 ∪ 10 flips it. The pattern (E* O E* O)* E* O E* has an odd number of flips. A grammar can use one variable for even 1s so far and one for odd 1s so far.
+A: Cut the string into pairs. E = 00 ∪ 11 keeps the 1-count even. O = 01 ∪ 10 flips it. The pattern (E∗ O E∗ O)∗ E∗ O E∗ has an odd number of flips. A grammar can use one variable for even 1s so far and one for odd 1s so far.
 
 Q: When is B equal to one-or-more copies of B?
 A: B = B+ exactly when BB ⊆ B. One copy is always in B+. If two copies stay inside B, longer concatenations stay inside too.
@@ -160,7 +160,7 @@ Q: Grammar rule S → ε versus a grammar with no useful rule.
 A: S → ε builds the language {ε}. A start variable with no rule that builds a string builds the empty language. Writing ε on the right-hand side is not the same as having no strings.
 
 Q: Does a star in a regex include the empty string?
-A: Yes. A* means zero or more copies, and zero copies is ε. The empty-set regex matches nothing, not even ε.
+A: Yes. A∗ means zero or more copies, and zero copies is ε. The empty-set regex matches nothing, not even ε.
 
 Q: How do you complement a DFA?
 A: Keep every state and every arrow. Swap which states are accept. The DFA must be complete, because a missing arrow is a hidden reject sink and has to be swapped too.
