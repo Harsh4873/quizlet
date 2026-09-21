@@ -262,6 +262,22 @@ const FIGURES: Record<string, ReactNode> = {
       ]}
     />
   ),
+  'even-len': (
+    <Machine
+      aria="DFA for even length. q0 is start and accept. q1 is odd and not accept. Every letter flips."
+      width={280}
+      height={140}
+      start="q0"
+      nodes={[
+        { id: 'q0', x: 70, y: 60, label: 'q0', accept: true, note: 'even' },
+        { id: 'q1', x: 210, y: 60, label: 'q1', note: 'odd' },
+      ]}
+      links={[
+        { from: 'q0', to: 'q1', label: '0, 1', bend: -16 },
+        { from: 'q1', to: 'q0', label: '0, 1', bend: -16 },
+      ]}
+    />
+  ),
   product: (
     <Machine
       aria="Four-state product. q0 even length even ones, start. q2 even length odd ones, accept. 1 moves sideways. 0 moves up and down."
