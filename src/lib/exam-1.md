@@ -173,3 +173,54 @@ A: Union, intersection, complement, concatenation, and star.
 
 Q: Which operations keep context-free languages context-free?
 A: Union, concatenation, star, and intersection with a regular language. Not intersection of two context-free languages. Not complement.
+
+Q: Over {0, 1}, which of these are strings: 0, 01001, ε, 11, 2, and 0, 1, 0?
+A: 0, 01001, ε, and 11 are strings. |01001| = 5 and |ε| = 0. The symbol 2 is not in the alphabet. A list with commas is not one string. |w| is the length. w is the string itself. ε is not the number 0.
+
+Q: What is a sink?
+A: A reject state you cannot leave. On a DFA, a missing arrow is a hidden sink, not extra power.
+
+Q: What is a regular language?
+A: A language for which some DFA accepts exactly those strings, and no others.
+
+Q: What does a DFA remember?
+A: Only its current state. The number of states is finite and fixed. It does not keep a copy of the symbols it already read.
+
+Q: Why does a PDA have a stack?
+A: The stack is extra memory for symbols already read. You push a marker, then pop it later. A DFA cannot do that.
+
+Q: DFA for strings ending in 1.
+A: q0 is start. q1 is accept. 0 stays at q0, 1 goes to q1. From q1, 1 stays and 0 returns to q0. [[fig:end-1]]
+
+Q: DFA for strings ending in 0.
+A: q0 is start. q1 is accept. 1 stays at q0, 0 goes to q1. From q1, 0 stays and 1 returns to q0. [[fig:end-0]]
+
+Q: DFA for strings with at least one 1.
+A: q0 loops on 0. The first 1 goes to q1, which is accept and loops on 0 and 1. [[fig:one-1]]
+
+Q: DFA for an even number of 1s.
+A: q0 is start and accept. 0 loops on both states. 1 flips between q0 and q1. q1 is not accept. [[fig:even-ones]]
+
+Q: DFA for an odd number of 1s.
+A: Same arrows as the even machine. Swap the accept state, so q1 is accept and q0 is not. Flipping the condition is a swap of the double circles. [[fig:odd-ones]]
+
+Q: How many states do you need for k yes-or-no facts?
+A: 2 to the k. Two facts give 4 states. Three facts give 8. Name the states first, then draw the arrows.
+
+Q: What is an NFA?
+A: One letter may have no arrow, one arrow, or many arrows. Accept if at least one run ends in an accept state. A missing arrow kills only that branch.
+
+Q: How do you build an NFA for the union of two NFAs?
+A: Add a new start state. Draw an ε-arrow from it into each old start. Accept if either machine would accept. [[fig:nfa-union]]
+
+Q: What are the steps of a regular pumping proof?
+A: Assume the language is regular. Take the pumping length p. Choose an s that is in the language and has length at least p. Split s = xyz with the three rules. Use i = 0 or i = 2 to leave the language. That contradiction means it is not regular.
+
+Q: What is a context-free grammar, and what is a CFL?
+A: A grammar is variables V, terminals Σ, rules R, and a start variable. A CFL is a language some such grammar generates.
+
+Q: Read the PDA label 1, A → B. What is X on a stack?
+A: Read 1, pop A, push B. X is a stack symbol you chose as a marker. It is not an input letter.
+
+Q: Use regular pumping on {a^n b^n c^n}. What is the cut, and which i breaks it?
+A: s = a^p b^p c^p, for example aabbcc when p = 2. |xy| ≤ p puts y in the a's. i = 0 deletes those a's, so the counts no longer match. This shows the language is not regular. It is not the five-piece context-free pumping argument.
