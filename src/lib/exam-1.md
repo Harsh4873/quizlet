@@ -168,8 +168,23 @@ A: Keep every state and every arrow. Swap which states are accept. The DFA must 
 Q: What is the complement of the empty language, and of {ε}?
 A: The complement of ∅ is every string. The complement of {ε} is every nonempty string.
 
-Q: Which operations keep regular languages regular?
-A: Union, intersection, complement, concatenation, and star.
+Q: Are regular languages closed under union?
+A: Yes. If A and B are regular, A ∪ B is regular.
+
+Q: Are regular languages closed under concatenation?
+A: Yes. If A and B are regular, the strings of A followed by strings of B are regular.
+
+Q: Are regular languages closed under star?
+A: Yes. If A is regular, A∗ is regular. That includes the empty string, because star allows zero copies.
+
+Q: Are regular languages closed under intersection?
+A: Yes. If A and B are regular, A ∩ B is regular. Context-free languages are not closed under intersection with each other.
+
+Q: Are regular languages closed under complement?
+A: Yes. Swap the accept states on a complete DFA. Context-free languages are not closed under complement.
+
+Q: Closure list: regular versus context-free.
+A: Regular: closed under union, concatenation, star, intersection, and complement. Context-free: closed under union, concatenation, star, and intersection with a regular language. Not closed under intersection of two context-free languages. Not closed under complement.
 
 Q: Which operations keep context-free languages context-free?
 A: Union, concatenation, star, and intersection with a regular language. Not intersection of two context-free languages. Not complement.
