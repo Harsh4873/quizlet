@@ -2377,6 +2377,27 @@ textarea.review-input {
   perspective: 1400px;
 }
 
+.flashcard.has-figure {
+  height: min(640px, 86vh);
+  min-height: 480px;
+}
+
+.card-figure {
+  width: 100%;
+  color: var(--text);
+}
+
+.card-figure .machine {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.face-text-with-figure {
+  font-size: 15px;
+  font-weight: 650;
+}
+
 .flashcard-inner {
   position: relative;
   display: block;

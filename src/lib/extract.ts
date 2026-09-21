@@ -161,6 +161,21 @@ function sentencesOf(text: string): string[] {
     .filter(Boolean);
 }
 
+const FIGURE_RE = /\[\[fig:([a-z0-9-]+)\]\]/g;
+
+/** Pull a diagram id out of an answer and keep the words. */
+export function splitFigure(text: string): { definition: string; figure?: string } {
+  let figure: string | undefined;
+  const definition = text
+    .replace(FIGURE_RE, (_match, id: string) => {
+      figure = id;
+      return ' ';
+    })
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { definition, figure };
+}
+
 function concise(text: string, maximum = 420): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (clean.length <= maximum) return clean;
@@ -243,7 +258,8 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     if (terms.length >= MAX_TERMS) return;
     const key = normalizeKey(term);
     if (!key) return;
-    const cleanDef = concise(definition);
+    const split = splitFigure(concise(definition));
+    const cleanDef = split.definition;
     if (cleanDef.length < 4) return;
     const existing = seenTerms.get(key);
     if (existing !== undefined) {
@@ -259,6 +275,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
       definition: cleanDef,
       section,
       source,
+      figure: split.figure,
     });
   };
 

@@ -134,6 +134,9 @@ describe('sample deck', () => {
     expect(terms.length).toBeLessThanOrEqual(140);
     expect(terms.some((t) => t.source === 'qa')).toBe(true);
     expect(outline.length).toBeGreaterThanOrEqual(1);
+    const drawn = terms.find((t) => t.figure === 'product');
+    expect(drawn?.definition.includes('[[fig:')).toBe(false);
+    expect(terms.filter((t) => t.figure).length).toBeGreaterThan(8);
   });
 });
 

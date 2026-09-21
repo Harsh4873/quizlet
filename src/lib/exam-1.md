@@ -43,25 +43,25 @@ Q: What is a regular language?
 A: A language such that some DFA accepts exactly its strings.
 
 Q: DFA for strings ending in 1?
-A: q0 start, q1 accept. 0 stays, 1 goes to q1. From q1, 1 stays and 0 returns to q0.
+A: q0 start, q1 accept. 0 stays, 1 goes to q1. From q1, 1 stays and 0 returns to q0. [[fig:end-1]]
 
 Q: DFA for strings ending in 0?
-A: q0 start, q1 accept. 1 stays at q0, 0 goes to q1. From q1, 0 stays and 1 returns to q0.
+A: q0 start, q1 accept. 1 stays at q0, 0 goes to q1. From q1, 0 stays and 1 returns to q0. [[fig:end-0]]
 
 Q: DFA for at least one 1?
-A: q0 start. q1 accept with a loop on 0 and 1. q0 loops on 0 and goes to q1 on 1.
+A: q0 start. q1 accept with a loop on 0 and 1. q0 loops on 0 and goes to q1 on 1. [[fig:one-1]]
 
 Q: DFA for an even number of 1s?
-A: q0 is start and accept. 0 loops. 1 flips between q0 and q1. q1 is not accept.
+A: q0 is start and accept. 0 loops. 1 flips between q0 and q1. q1 is not accept. [[fig:even-ones]]
 
 Q: How do you get the odd-number-of-1s DFA from the even one?
-A: Keep the same arrows. Swap which states are accept.
+A: Keep the same arrows. Swap which states are accept. [[fig:odd-ones]]
 
 Q: What is the complement of a DFA language?
 A: Same states and arrows. Swap accept and non-accept. The machine must be complete (sink included) or the swap is wrong.
 
 Q: Product DFA: even length AND odd number of 1s. Which state accepts?
-A: Four states. q0 even/even start. q1 odd/odd. q2 even/odd accept. q3 odd/even. On 1, q0 swaps with q1 and q2 swaps with q3. On 0, q0 swaps with q3 and q1 swaps with q2.
+A: Four states. q0 even/even start. q1 odd/odd. q2 even/odd accept. q3 odd/even. On 1, q0 swaps with q1 and q2 swaps with q3. On 0, q0 swaps with q3 and q1 swaps with q2. [[fig:product]]
 
 Q: How many states for k yes/no facts?
 A: 2 to the k. Two facts give 4 states. Three facts give 8.
@@ -79,7 +79,7 @@ Q: What is an epsilon-transition?
 A: A jump that reads nothing. Used to glue machines, as in union: new start, epsilon into each old start.
 
 Q: NFA union of N1 and N2?
-A: New start state, epsilon arrow into N1's start and epsilon arrow into N2's start. Accept if either machine would accept.
+A: New start state, epsilon arrow into N1's start and epsilon arrow into N2's start. Accept if either machine would accept. [[fig:nfa-union]]
 
 Q: What are the three regex operations?
 A: A letter is a pattern. A union B means or. A-star means zero or more copies of A. Writing patterns next to each other means "then".
@@ -106,22 +106,22 @@ Q: Why plant a dollar sign on the stack?
 A: Sipser accepts by final state, and a transition cannot test "stack empty". Dollar is the bottom marker. Accept only when dollar is on top, so leftover stack symbols block a cheat accept.
 
 Q: 2.5(a) at least three 1s?
-A: Four states q0 to q3. 1 moves forward. 0 loops. q3 is accept and stays on 0 or 1. Stack unused. Same idea as the old DFA, with epsilon-to-epsilon labels.
+A: Four states q0 to q3. 1 moves forward. 0 loops. q3 is accept and stays on 0 or 1. Stack unused. Same idea as the old DFA, with epsilon-to-epsilon labels. [[fig:pda-3]]
 
 Q: 2.5(b) same first and last symbol?
-A: Remember the first symbol in the state. Guess that a later matching symbol is last, and jump to a dead accept (no arrows out). Stack unused. Epsilon the string is out.
+A: Remember the first symbol in the state. Guess that a later matching symbol is last, and jump to a dead accept (no arrows out). Stack unused. Epsilon the string is out. [[fig:pda-ends]]
 
 Q: 2.5(c) odd length?
-A: Two states. q0 even, start, not accept. q1 odd, accept. Every letter flips. Stack unused. 00 rejects.
+A: Two states. q0 even, start, not accept. q1 odd, accept. Every letter flips. Stack unused. 00 rejects. [[fig:pda-odd]]
 
 Q: 2.5(d) odd length and middle symbol 0?
-A: Push dollar, push X for each first-half symbol, guess a middle 0, pop one X per second-half symbol, pop dollar to accept. 101 accepts. 0001 dies because an X is still on top.
+A: Push dollar, push X for each first-half symbol, guess a middle 0, pop one X per second-half symbol, pop dollar to accept. 101 accepts. 0001 dies because an X is still on top. [[fig:pda-mid]]
 
 Q: 2.5(e) palindrome PDA?
-A: Push dollar, push the actual letters, guess the middle (epsilon if even, eat one letter if odd), pop only a matching letter, pop dollar to accept. Epsilon is in, via epsilon moves to the accept state.
+A: Push dollar, push the actual letters, guess the middle (epsilon if even, eat one letter if odd), pop only a matching letter, pop dollar to accept. Epsilon is in, via epsilon moves to the accept state. [[fig:pda-pal]]
 
 Q: 2.5(f) empty set PDA?
-A: One start state, not a double circle, no arrows. A path of epsilon into an accept state would accept {epsilon}, which is wrong.
+A: One start state, not a double circle, no arrows. A path of epsilon into an accept state would accept {epsilon}, which is wrong. [[fig:pda-empty]]
 
 Q: What does an informal PDA description mean?
 A: One or two English sentences above the diagram: what you remember, what you push, when you accept. Exercise 2.5 asks for that plus the state diagram.

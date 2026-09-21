@@ -21,6 +21,15 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
   }
 
   const existing = next.sets.find((set) => set.id === EXAM_SET_ID);
+  if (existing && (existing.markdown !== EXAM_MARKDOWN || existing.title !== EXAM_SET_TITLE)) {
+    next = upsertSet(next, {
+      ...existing,
+      title: EXAM_SET_TITLE,
+      markdown: EXAM_MARKDOWN,
+      updatedAt: nextDataTimestamp(next, now),
+    });
+    return next;
+  }
   if (!existing) {
     const stamp = nextDataTimestamp(next, now);
     const created: StudySet = {

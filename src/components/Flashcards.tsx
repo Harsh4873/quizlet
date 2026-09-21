@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Shuffle, Star, X } from 'lucide-react';
 import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { mulberry32, shuffle } from '../lib/questions';
+import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
 
@@ -159,7 +160,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
       </div>
 
       {card && (
-        <button type="button" className={`flashcard ${flipped ? 'is-flipped' : ''}`} onClick={() => setFlipped((f) => !f)}>
+        <button type="button" className={`flashcard ${flipped ? 'is-flipped' : ''} ${card.figure ? 'has-figure' : ''}`} onClick={() => setFlipped((f) => !f)}>
           <span className="flashcard-inner">
             <span className="flashcard-face flashcard-front">
               <span className="face-label">{frontLabel}</span>
@@ -168,7 +169,8 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
             </span>
             <span className="flashcard-face flashcard-back">
               <span className="face-label">{backLabel}</span>
-              <span className="face-text">{termFirst ? card.definition : card.term}</span>
+              <span className={`face-text ${card.figure ? 'face-text-with-figure' : ''}`}>{termFirst ? card.definition : card.term}</span>
+              {card.figure ? <ExamFigure id={card.figure} /> : null}
               <span className="face-section">{card.section}</span>
             </span>
           </span>

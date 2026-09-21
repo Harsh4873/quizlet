@@ -80,6 +80,8 @@ export interface TermCard {
   definition: string;
   section: string;
   source: TermSource;
+  /** Built-in state diagram id, when the card has a picture. */
+  figure?: string;
 }
 
 export interface ClozeCard {
