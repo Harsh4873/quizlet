@@ -214,7 +214,22 @@ Q: How do you build an NFA for the union of two NFAs?
 A: Add a new start state. Draw an ε-arrow from it into each old start. Accept if either machine would accept. [[fig:nfa-union]]
 
 Q: What are the steps of a regular pumping proof?
-A: Assume the language is regular. Take the pumping length p. Choose an s that is in the language and has length at least p. Split s = xyz with the three rules. Use i = 0 or i = 2 to leave the language. That contradiction means it is not regular.
+A: You pick a string s that is in the language and has length at least p. The other side picks any legal cut s = xyz. You must show that every such cut can be pumped, with some i, out of the language. If one legal cut stays in, the proof is dead.
+
+Q: What does a legal cut mean?
+A: The cut is allowed by the rules: y is not empty, and xy is at most p symbols long. Legal does not mean the cut breaks the language.
+
+Q: Who picks the cut?
+A: Not you. You pick the string. They may pick any legal cut in the front p symbols. You have to win against all of those cuts, not just the one that helps you.
+
+Q: Why does a string of only b's fail for three copies of one block?
+A: With p = 4, twelve b's is www with w = bbbb. Cutting one b and copying it makes 13 b's, which is not three equal blocks. Cutting three b's and copying them makes 15 b's, which is still www as five, five, five. They are allowed to pick the three-b cut, so this string cannot carry the proof.
+
+Q: Why can a marked string work when all identical letters do not?
+A: 000011110000 is four 0s, four 1s, four 0s. Every legal cut sits in the front 0s and breaks the three matching blocks. All b's has no marker, so a cut whose length is a multiple of 3 can stay in.
+
+Q: What is the identical-letters trap?
+A: If every symbol is the same, the other side can hide the cut inside a block that still matches after pumping. Put a marker in the string, such as a different letter, so every short front cut is forced to break the pattern.
 
 Q: What is a context-free grammar, and what is a CFL?
 A: A grammar is variables V, terminals Σ, rules R, and a start variable. A CFL is a language some such grammar generates.
