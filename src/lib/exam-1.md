@@ -19,7 +19,31 @@ Q: State the three regular pumping rules.
 A: Split s = xyz with |xy| ≤ p, |y| > 0, and xy^i z still in the language for every i ≥ 0.
 
 Q: What does the pumping length p mean, and why can a worked example use p = 4?
-A: p is some length the lemma hands you if the language is regular. You do not solve for it. p = 4 is only a stand-in so the letters can be written.
+A: In a not-regular proof, the lemma hands you some p and you do not solve for it. p = 4 is only a stand-in so the letters can be written. A minimum-pumping-length question is different: you compute the smallest p yourself.
+
+Q: What are the two uses of the pumping lemma?
+A: Same three rules, two goals. To show a language is not regular, every legal cut must leave the language for some i. To find the minimum pumping length of a regular language, you need a cut that stays in for every i. Pumping does not break regular languages. It proves some languages are not regular.
+
+Q: What is a pumping length, and what is the minimum one?
+A: p is a pumping length if every string in the language of length at least p has a cut xyz with |y| ≥ 1, |xy| ≤ p, and xy^i z still in the language for every i ≥ 0. The minimum pumping length is the smallest such p. Strings shorter than p do not have to pump.
+
+Q: How do you find a minimum pumping length?
+A: Find the longest string in the language that has no friendly cut. The minimum p is one more than that length. A friendly cut stays in for every i. A cut that leaves the language is one you do not pick.
+
+Q: Why is 3 not a pumping length for 0001∗?
+A: 000 has length 3 and is in the language. Every nonempty y is made of 0s, so i = 0 has fewer than three leading 0s and i = 2 has more. Both are out. A pumping length of 3 would have to pump 000. It cannot.
+
+Q: Why is the minimum pumping length of 0001∗ equal to 4?
+A: 000 is the longest string in the language that cannot pump, so the minimum is one more than its length. At p = 4, 000 is too short to care. Every longer string has a 1. Cut x = 000, y = the first 1, z = the rest. Pumping only changes how many 1s there are, and that stays in 0001∗.
+
+Q: On 000111, why doesn't a bad cut of the 0s kill p = 3?
+A: You only need one friendly cut on that string. x = 0, y = 00, z = 111 gives 0111 when i = 0, so throw that cut away. x = 000, y = 1, z = 11 stays in for every i. 000111 can pump. The string that kills p = 3 is 000, which has no 1 to pump.
+
+Q: Why is the minimum pumping length of 0∗1∗ equal to 1?
+A: Every nonempty string has a 0 or a 1 you can repeat and stay in 0∗1∗. ε has length 0, so p = 1 does not have to pump it. p = 0 would require pumping ε, and ε has no nonempty y.
+
+Q: If you union 001 onto 0∗1∗, what is the minimum pumping length?
+A: 001 is already in 0∗1∗, so the union is the same language. The minimum pumping length stays 1.
 
 Q: What is the difference between p and n?
 A: p is the pumping length. n is a count inside a language, like the n in 0^n 1^n. Setting that count equal to p makes a legal long string. They are not the same variable.
