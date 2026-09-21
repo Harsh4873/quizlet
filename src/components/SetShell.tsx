@@ -31,6 +31,7 @@ interface SetShellProps {
   material: StudyMaterial;
   progress: SetProgress;
   mode: Mode;
+  startIndex?: number;
   onNavigate: (mode: Mode) => void;
   onBack: () => void;
   /** Where the back link returns to — the Recall library or the Review list. */
@@ -63,7 +64,7 @@ const PAPER_TABS: { mode: Mode; label: string; icon: typeof BookOpen }[] = [
 ];
 
 export function SetShell(props: SetShellProps) {
-  const { set, material, progress, mode, onNavigate, onBack, backLabel = 'Library' } = props;
+  const { set, material, progress, mode, startIndex = 0, onNavigate, onBack, backLabel = 'Library' } = props;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(set.markdown);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,7 +229,7 @@ export function SetShell(props: SetShellProps) {
         ) : (
           <>
             {mode === 'cards' && (
-              <Flashcards material={material} progress={progress} onAnswer={props.onAnswer} onToggleStar={props.onToggleStar} />
+              <Flashcards material={material} progress={progress} startIndex={startIndex} onAnswer={props.onAnswer} onToggleStar={props.onToggleStar} />
             )}
             {mode === 'quiz' && <QuizView material={material} progress={progress} onAnswer={props.onAnswer} />}
             {mode === 'blanks' && <ClozeView material={material} progress={progress} onAnswer={props.onAnswer} />}

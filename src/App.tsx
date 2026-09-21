@@ -28,6 +28,7 @@ import { recordBestMatch } from './lib/sync-core';
 import { EXAM_SET_ID, EXAM_SET_TITLE } from './lib/sample';
 import { ensureQuizletLibrary } from './lib/quizlet-library';
 import { Library, type ImportItem } from './components/Library';
+import { CardsHome } from './components/CardsHome';
 import { SetShell } from './components/SetShell';
 import { SyncMenu } from './components/SyncMenu';
 import { isPaperSet } from './lib/paper-set';
@@ -52,28 +53,35 @@ function setSyncFlag(on: boolean) {
 }
 
 type Route =
-  | { view: 'library' }
-  | { view: 'set'; setId: string; mode: Mode };
+  | { view: 'home' }
+  | { view: 'cards' }
+  | { view: 'set'; setId: string; mode: Mode; card: number };
 
 function parseHash(): Route {
   const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'set' && parts[1]) {
     const mode = (MODES as readonly string[]).includes(parts[2]) ? (parts[2] as Mode) : 'cards';
-    return { view: 'set', setId: parts[1], mode };
+    const card = Number(parts[3]);
+    return { view: 'set', setId: parts[1], mode, card: Number.isFinite(card) ? card : 0 };
   }
-  if (parts[0] === 'library' || parts[0] === 'flashcards' || parts[0] === 'recall') {
-    return { view: 'library' };
-  }
-  // Home and any papers/review leftover hashes open the Exam 1 cards.
-  return { view: 'set', setId: EXAM_SET_ID, mode: 'cards' };
+  if (parts[0] === 'cards') return { view: 'cards' };
+  return { view: 'home' };
 }
 
 function navigate(hash: string) {
   window.location.hash = hash;
 }
 
-function openExamCards() {
-  navigate(`/set/${EXAM_SET_ID}/cards`);
+function openHome() {
+  navigate('/home');
+}
+
+function openCards() {
+  navigate('/cards');
+}
+
+function openExamCards(index = 0) {
+  navigate(`/set/${EXAM_SET_ID}/cards/${index}`);
 }
 
 export default function App() {
@@ -229,9 +237,9 @@ export default function App() {
     }
     setData(ensureQuizletLibrary(next));
     if (errors.length > 0) setNotice(errors[0]);
-    else if (imported) {
+      else if (imported) {
       setNotice('Updated Exam 1.');
-      navigate(`/set/${EXAM_SET_ID}/cards`);
+      openCards();
     }
   };
 
@@ -310,14 +318,8 @@ export default function App() {
   const examSet = data.sets.find((s) => s.id === EXAM_SET_ID);
 
   useEffect(() => {
-    if (route.view === 'set' && !activeSet) openExamCards();
+    if (route.view === 'set' && !activeSet) openCards();
   }, [route, activeSet]);
-
-  useEffect(() => {
-    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
-      openExamCards();
-    }
-  }, []);
 
   const themeIcon = data.theme === 'light' ? <Sun size={16} aria-hidden /> : data.theme === 'dark' ? <Moon size={16} aria-hidden /> : <Monitor size={16} aria-hidden />;
 
@@ -325,7 +327,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-inner">
-          <button type="button" className="brand" onClick={openExamCards}>
+          <button type="button" className="brand" onClick={openHome}>
             <span className="brand-badge">
               <GraduationCap size={18} aria-hidden />
             </span>
@@ -334,17 +336,17 @@ export default function App() {
           <nav className="header-nav" aria-label="Sections">
             <button
               type="button"
-              className={`header-tab header-tab-study ${route.view === 'set' ? 'header-tab-active' : ''}`}
-              onClick={openExamCards}
+              className={`header-tab header-tab-study ${route.view === 'home' ? 'header-tab-active' : ''}`}
+              onClick={openHome}
             >
-              Exam 1
+              Home
             </button>
             <button
               type="button"
-              className={`header-tab header-tab-study ${route.view === 'library' ? 'header-tab-active' : ''}`}
-              onClick={() => navigate('/library')}
+              className={`header-tab header-tab-study ${route.view === 'cards' || route.view === 'set' ? 'header-tab-active' : ''}`}
+              onClick={openCards}
             >
-              Import
+              Cards
             </button>
           </nav>
           <div className="header-actions">
@@ -380,9 +382,10 @@ export default function App() {
             material={materialFor(activeSet)}
             progress={getProgress(data, activeSet.id)}
             mode={route.mode}
+            startIndex={route.card}
             onNavigate={(mode) => navigate(`/set/${activeSet.id}/${mode}`)}
-            onBack={() => navigate('/library')}
-            backLabel="Import"
+            onBack={openCards}
+            backLabel="Cards"
             onAnswer={answerFor(activeSet.id)}
             onToggleStar={starFor(activeSet.id)}
             onBestTime={bestTimeFor(activeSet.id)}
@@ -390,6 +393,12 @@ export default function App() {
             onAddNote={appendNote(activeSet)}
             onDelete={() => removeSet(activeSet)}
             onExport={() => exportSet(activeSet)}
+          />
+        ) : route.view === 'cards' && examSet ? (
+          <CardsHome
+            set={examSet}
+            material={materialFor(examSet)}
+            onStudy={openExamCards}
           />
         ) : (
           <Library

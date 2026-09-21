@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, RotateCcw, Shuffle, Star, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, RotateCcw, Search, Shuffle, Star, X } from 'lucide-react';
 import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { mulberry32, shuffle } from '../lib/questions';
 import { ExamFigure } from './Machine';
@@ -11,17 +11,21 @@ interface FlashcardsProps {
   progress: SetProgress;
   onAnswer: (cardId: string, correct: boolean) => void;
   onToggleStar: (cardId: string) => void;
+  startIndex?: number;
 }
 
-export function Flashcards({ material, progress, onAnswer, onToggleStar }: FlashcardsProps) {
+export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0 }: FlashcardsProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const [termFirst, setTermFirst] = useState(true);
   const [seed, setSeed] = useState(0);
   const [roundKey, setRoundKey] = useState(0);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(startIndex);
   const [flipped, setFlipped] = useState(false);
   const [tally, setTally] = useState({ got: 0, missed: 0 });
   const [done, setDone] = useState(false);
+  const [listQuery, setListQuery] = useState('');
+  const [offset, setOffset] = useState(0);
+  const drag = useRef({ x: 0, y: 0, pointing: false });
 
   // The deck is frozen for the round: progress changes mid-round must not reorder it.
   const deck: TermCard[] = useMemo(() => {
@@ -42,6 +46,14 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
     setTally({ got: 0, missed: 0 });
     setDone(false);
   };
+
+  useEffect(() => {
+    if (seed !== 0) return;
+    const next = Math.min(Math.max(0, startIndex), Math.max(0, deck.length - 1));
+    setIndex(next);
+    setFlipped(false);
+    setDone(false);
+  }, [startIndex, deck.length, seed]);
 
   const card = deck[index];
 
@@ -101,7 +113,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
       <div className="round-summary fade-in">
         <h2>Round complete</h2>
         <p className="round-score">
-          {tally.got} of {total} right{total > 0 && tally.missed === 0 ? ' — perfect!' : ''}
+          {tally.got} of {total} right{total > 0 && tally.missed === 0 ? '. Perfect.' : ''}
         </p>
         <div className="round-actions">
           <button type="button" className="btn btn-primary" onClick={() => restart()}>
@@ -160,7 +172,41 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
       </div>
 
       {card && (
-        <button type="button" className={`flashcard ${flipped ? 'is-flipped' : ''} ${card.figure ? 'has-figure' : ''}`} onClick={() => setFlipped((f) => !f)}>
+        <button
+          type="button"
+          className={`flashcard ${flipped ? 'is-flipped' : ''} ${card.figure ? 'has-figure' : ''} ${offset !== 0 ? 'is-dragging' : ''}`}
+          style={{ transform: offset === 0 ? undefined : `translateX(${offset}px) rotate(${offset / 18}deg)` }}
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            drag.current = { x: event.clientX, y: event.clientY, pointing: true };
+          }}
+          onPointerMove={(event) => {
+            if (!drag.current.pointing) return;
+            const dx = event.clientX - drag.current.x;
+            const dy = event.clientY - drag.current.y;
+            if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+            setOffset(dx);
+          }}
+          onPointerUp={(event) => {
+            if (!drag.current.pointing) return;
+            const dx = event.clientX - drag.current.x;
+            const dy = event.clientY - drag.current.y;
+            drag.current.pointing = false;
+            if (Math.abs(dx) > 72 && Math.abs(dx) > Math.abs(dy)) {
+              setOffset(0);
+              grade(dx > 0);
+              return;
+            }
+            setOffset(0);
+            if (Math.hypot(dx, dy) < 8) setFlipped((value) => !value);
+          }}
+          onPointerCancel={() => {
+            drag.current.pointing = false;
+            setOffset(0);
+          }}
+        >
+          {offset > 28 ? <span className="swipe-stamp swipe-yes">Got it</span> : null}
+          {offset < -28 ? <span className="swipe-stamp swipe-no">Still learning</span> : null}
           <span className="flashcard-inner">
             <span className="flashcard-face flashcard-front">
               <span className="face-label">{frontLabel}</span>
@@ -216,10 +262,44 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar }: Flash
         </button>
       </div>
 
-      <p className="kbd-hint">
-        <span className="kbd">space</span> flip · <span className="kbd">←</span>
-        <span className="kbd">→</span> move · <span className="kbd">1</span> missed · <span className="kbd">2</span> got it
-      </p>
+      <label className="card-search">
+        <Search size={16} aria-hidden />
+        <input
+          className="input"
+          value={listQuery}
+          onChange={(event) => setListQuery(event.target.value)}
+          placeholder="Find a card"
+          aria-label="Find a card"
+          spellCheck={false}
+        />
+      </label>
+      <ul className="card-index card-index-study">
+        {material.terms
+          .filter((term) => {
+            const needle = listQuery.trim().toLowerCase();
+            if (!needle) return true;
+            return `${term.term} ${term.definition}`.toLowerCase().includes(needle);
+          })
+          .map((term) => (
+            <li key={term.id}>
+              <button
+                type="button"
+                className={`card-index-item ${term.id === card?.id ? 'card-index-item-active' : ''}`}
+                onClick={() => {
+                  const at = deck.findIndex((item) => item.id === term.id);
+                  if (at < 0) return;
+                  setDone(false);
+                  setFlipped(false);
+                  setIndex(at);
+                }}
+              >
+                <span className="card-index-term">{term.term}</span>
+              </button>
+            </li>
+          ))}
+      </ul>
+
+      <p className="kbd-hint">Swipe right if you know it. Swipe left if you do not. Tap to flip.</p>
     </div>
   );
 }

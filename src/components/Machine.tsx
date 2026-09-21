@@ -63,12 +63,32 @@ export function Machine({ aria, width, height, nodes, links = [], loops = [], st
         const mx = (a.x + b.x) / 2 - uy * bend;
         const my = (a.y + b.y) / 2 + ux * bend;
         const d = bend === 0 ? `M ${x1} ${y1} L ${x2} ${y2}` : `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`;
-        const lx = bend === 0 ? (x1 + x2) / 2 : mx;
-        const ly = bend === 0 ? (y1 + y2) / 2 : my;
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        let lx = midX;
+        let ly = midY;
+        if (bend !== 0) {
+          lx = mx;
+          ly = my + Math.sign(bend) * 18;
+        } else {
+          const side = ux > 0.2 ? -1 : 1;
+          lx = midX + -uy * 18 * side;
+          ly = midY + ux * 18 * side;
+        }
         return (
           <g key={`${link.from}-${link.to}-${link.label}`}>
             <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" markerEnd={`url(#${markerId})`} />
-            <text x={lx} y={ly - 6} textAnchor="middle" fill="currentColor" fontSize="11" fontWeight="600">
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              fill="currentColor"
+              fontSize="11"
+              fontWeight="600"
+              stroke="var(--panel)"
+              strokeWidth="4"
+              paintOrder="stroke fill"
+            >
               {link.label}
             </text>
           </g>
@@ -88,11 +108,14 @@ export function Machine({ aria, width, height, nodes, links = [], loops = [], st
             <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" markerEnd={`url(#${markerId})`} />
             <text
               x={node.x}
-              y={node.y + sign * (r + 46)}
+              y={node.y + sign * (r + 52)}
               textAnchor="middle"
               fill="currentColor"
               fontSize="11"
               fontWeight="600"
+              stroke="var(--panel)"
+              strokeWidth="4"
+              paintOrder="stroke fill"
             >
               {loop.label}
             </text>
