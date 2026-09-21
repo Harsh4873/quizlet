@@ -1,4 +1,4 @@
-import { useId, useEffect, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 export interface MachineNode {
   id: string;
@@ -38,69 +38,6 @@ export function Machine({ aria, width, height, nodes, links = [], loops = [], st
   const markerId = `arrow-${rawId}`;
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const r = 22;
-
-  // #region agent log
-  useEffect(() => {
-    const labels: Array<{ kind: string; text: string; x: number; y: number; clipped: boolean }> = [];
-    for (const link of links) {
-      const a = byId.get(link.from);
-      const b = byId.get(link.to);
-      if (!a || !b) continue;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const ux = dx / len;
-      const uy = dy / len;
-      const x1 = a.x + ux * (r + 2);
-      const y1 = a.y + uy * (r + 2);
-      const x2 = b.x - ux * (r + 8);
-      const y2 = b.y - uy * (r + 8);
-      const bend = link.bend ?? 0;
-      const mx = (a.x + b.x) / 2 - uy * bend;
-      const my = (a.y + b.y) / 2 + ux * bend;
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2;
-      let lx = midX;
-      let ly = midY;
-        if (bend !== 0) {
-          const chordX = (a.x + b.x) / 2;
-          const chordY = (a.y + b.y) / 2;
-          const vx = mx - chordX;
-          const vy = my - chordY;
-          const vlen = Math.hypot(vx, vy) || 1;
-          lx = mx + (vx / vlen) * 16;
-          ly = my + (vy / vlen) * 16;
-        } else {
-        const side = ux > 0.2 ? -1 : 1;
-        lx = midX + -uy * 22 * side;
-        ly = midY + ux * 22 * side;
-      }
-      const halfW = link.label.length * 7;
-      labels.push({
-        kind: 'edge',
-        text: link.label,
-        x: Math.round(lx),
-        y: Math.round(ly),
-        clipped: lx - halfW < 0 || lx + halfW > width || ly < 12 || ly > height - 2,
-      });
-    }
-    for (const loop of loops) {
-      const node = byId.get(loop.id);
-      if (!node) continue;
-      const sign = (loop.side ?? 'below') === 'above' ? -1 : 1;
-      const y = node.y + sign * (r + 48);
-      const halfW = loop.label.length * 7;
-      labels.push({
-        kind: 'loop',
-        text: loop.label,
-        x: node.x,
-        y: Math.round(y),
-        clipped: node.x - halfW < 0 || node.x + halfW > width || y < 12 || y > height - 2,
-      });
-    }
-    fetch('http://127.0.0.1:7536/ingest/eae462cc-5ce3-40be-85f3-398443ff4da8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '23530b' }, body: JSON.stringify({ sessionId: '23530b', runId: 'post-fix', hypothesisId: 'C', location: 'Machine.tsx:layout', message: 'label bounds', data: { aria, width, height, clipped: labels.filter((item) => item.clipped), labels }, timestamp: Date.now() }) }).catch(() => {});
-  }, [aria, width, height, links, loops, nodes]);
-  // #endregion
 
   return (
     <svg className="machine" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={aria}>
