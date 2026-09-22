@@ -252,6 +252,30 @@ A: One letter may have no arrow, one arrow, or many arrows. Accept if at least o
 Q: How do you build an NFA for the union of two NFAs?
 A: Add a new start state. Draw an ε-arrow from it into each old start. Accept if either machine would accept. [[fig:nfa-union]]
 
+Q: When does an NFA accept, and when does it reject?
+A: It accepts if at least one path ends in an accept state. It rejects only if every path fails. One successful path is enough to accept. Rejection needs all of them.
+
+Q: If a k-state NFA accepts anything, how short an accepted string can you guarantee?
+A: Some accepted string has length at most k. Take a shortest accepted string and one accepting path. If a state repeats, the section between the two visits is a loop. Delete it and you still accept, but the string is shorter, which cannot happen. So the path never repeats a state. At most k states means at most k symbols. A loop-free path is actually at most k minus 1 symbols. The bound you need is at most k.
+
+Q: Does that same length-k guarantee work for the shortest rejected string?
+A: No. You cannot prove rejection by following one path, because every path has to fail. A 3-state NFA can accept every string of length at most 3 and reject a string of length 4. Then the shortest rejected string is longer than k.
+
+Q: How can a 3-state NFA first reject at length 4?
+A: Make every state accepting, and start in q1. On a1 a2 a3 a4 the reachable sets are {q1}, then {q2, q3}, then {q2}, then {q3}, then empty. A nonempty set means some path is still in an accept state, so that prefix is accepted. The empty set is the first reject. No shorter string reaches it, so the shortest rejected string has length 4, and k is 3.
+
+Q: Why doesn't swapping accept states complement an NFA?
+A: NFA acceptance means some path accepts. Swapping the double circles does not turn that into every path rejects. A DFA has exactly one path, so swapping accept states does complement a DFA.
+
+Q: If an NFA has k states, how many states can the subset DFA have?
+A: At most 2 to the k. Each NFA state is either in the current set or out of it. For k = 3 that is 8. For k = 4 that is 16.
+
+Q: If a k-state NFA rejects something, how short a rejected string can you guarantee?
+A: Some rejected string has length at most 2 to the k. Build the subset DFA. It has at most 2 to the k states and accepts the same language. Swap its accept states to get a DFA for the complement. The short-accepted-string fact then applies to that DFA.
+
+Q: Can the shortest rejected string really be exponential in the number of NFA states?
+A: Yes. With k states, make every state accepting and walk the reachable sets through all 2 to the k minus 1 subsets of the non-start states, ending at the empty set. The first reject then has length 2 to the k minus 1. For k = 3 that is 4. For k = 10 that is 512. That is half of 2 to the k, so the 2 to the k guarantee is the right size.
+
 Q: What are the steps of a regular pumping proof?
 A: You pick a string s that is in the language and has length at least p. The other side picks any legal cut s = xyz. You must show that every such cut can be pumped, with some i, out of the language. If one legal cut stays in, the proof is dead.
 
