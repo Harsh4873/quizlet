@@ -19,31 +19,13 @@ Q: State the three regular pumping rules.
 A: Split s = xyz with |xy| ≤ p, |y| > 0, and xy^i z still in the language for every i ≥ 0.
 
 Q: What does the pumping length p mean, and why can a worked example use p = 4?
-A: In a not-regular proof, the lemma hands you some p and you do not solve for it. p = 4 is only a stand-in so the letters can be written. A minimum-pumping-length question is different: you compute the smallest p yourself.
+A: In a not-regular proof, the lemma hands you some p and you do not solve for it. p = 4 is only a stand-in so the letters can be written. Thursday's exam is not a minimum-pumping-length drill.
 
-Q: What are the two uses of the pumping lemma?
-A: Same three rules, two goals. To show a language is not regular, every legal cut must leave the language for some i. To find the minimum pumping length of a regular language, you need a cut that stays in for every i. Pumping does not break regular languages. It proves some languages are not regular.
+Q: What are the two directions of the pumping lemma?
+A: Regular implies the three rules. The other direction is false. A language can satisfy the rules and still not be regular. Use the lemma by contradiction to show not regular. Satisfying the rules does not prove regular.
 
-Q: What is a pumping length, and what is the minimum one?
-A: p is a pumping length if every string in the language of length at least p has a cut xyz with |y| ≥ 1, |xy| ≤ p, and xy^i z still in the language for every i ≥ 0. The minimum pumping length is the smallest such p. Strings shorter than p do not have to pump.
-
-Q: How do you find a minimum pumping length?
-A: Find the longest string in the language that has no friendly cut. The minimum p is one more than that length. A friendly cut stays in for every i. A cut that leaves the language is one you do not pick.
-
-Q: Why is 3 not a pumping length for 0001∗?
-A: 000 has length 3 and is in the language. Every nonempty y is made of 0s, so i = 0 has fewer than three leading 0s and i = 2 has more. Both are out. A pumping length of 3 would have to pump 000. It cannot.
-
-Q: Why is the minimum pumping length of 0001∗ equal to 4?
-A: 000 is the longest string in the language that cannot pump, so the minimum is one more than its length. At p = 4, 000 is too short to care. Every longer string has a 1. Cut x = 000, y = the first 1, z = the rest. Pumping only changes how many 1s there are, and that stays in 0001∗.
-
-Q: On 000111, why doesn't a bad cut of the 0s kill p = 3?
-A: You only need one friendly cut on that string. x = 0, y = 00, z = 111 gives 0111 when i = 0, so throw that cut away. x = 000, y = 1, z = 11 stays in for every i. 000111 can pump. The string that kills p = 3 is 000, which has no 1 to pump.
-
-Q: Why is the minimum pumping length of 0∗1∗ equal to 1?
-A: Every nonempty string has a 0 or a 1 you can repeat and stay in 0∗1∗. ε has length 0, so p = 1 does not have to pump it. p = 0 would require pumping ε, and ε has no nonempty y.
-
-Q: If you union 001 onto 0∗1∗, what is the minimum pumping length?
-A: 001 is already in 0∗1∗, so the union is the same language. The minimum pumping length stays 1.
+Q: Is the minimum pumping length on Exam 1?
+A: Not expected. She grouped it with homework that was not in the lecture, along with Myhill–Nerode. A past exam had a minimum length. Do not drill it before the classification proof, the lemma proof, closure, or a PDA diagram.
 
 Q: What is the difference between p and n?
 A: p is the pumping length. n is a count inside a language, like the n in 0^n 1^n. Setting that count equal to p makes a legal long string. They are not the same variable.
@@ -63,17 +45,11 @@ A: The proof pumps 0^p 1^p and says it cannot be pumped. That failure is for the
 Q: What does closed under intersection mean?
 A: If you take any two languages in the family, their overlap is still in the family.
 
-Q: Why are context-free languages not closed under intersection?
-A: A = {a^m b^n c^n} and B = {a^n b^n c^m} are context-free. Their overlap is {a^n b^n c^n}, which is not context-free. One counterexample pair is enough.
+Q: Can Exam 1 ask you to prove a language is not context-free?
+A: No. The context-free pumping lemma is not on this exam. You can show context-free but not regular: pumping for not regular, then a pushdown automaton. You cannot show "not context-free."
 
-Q: In those two languages, are m and n shared across both?
-A: No. m and n are dummy names inside one set. A asks for b = c. B asks for a = b.
-
-Q: Why are context-free languages not closed under complement?
-A: They are closed under union. If they were also closed under complement, DeMorgan's law would make the intersection context-free, which it is not.
-
-Q: May you cite that {a^n b^n c^n} is not context-free without proving it?
-A: Yes. Use it as a known fact. Do not rebuild the proof.
+Q: Will she ask you to write a context-free grammar?
+A: No. A grammar is allowed only if you choose it to show a language is context-free. The question she described is a PDA state diagram. Know that a language is context-free exactly when some nondeterministic PDA accepts it.
 
 Q: Even length: which state is start, and which is accept?
 A: q0 is start and accept, because the empty string has even length. q1 is odd and not accept. Every symbol flips. [[fig:even-len]]
@@ -126,29 +102,14 @@ A: A short informal description: what the machine remembers, what it pushes, and
 Q: What are the three regex operations?
 A: A letter is a pattern. A ∪ B means or. A∗ means zero or more copies. Patterns written next to each other mean then.
 
-Q: What does a grammar rule capital → … mean?
-A: The capital is a variable, a kind of string. The arrow says it may be rewritten as the right-hand side. A bar means or.
+Q: Regex for at least three 1s.
+A: 0∗10∗10∗1(0 ∪ 1)∗. A regular expression is a legal way to prove a language is regular. She will not require one, and she will not ask for a grammar.
 
-Q: Regex or grammar for at least three 1s.
-A: Regex: 0∗10∗10∗1(0 ∪ 1)∗. Grammar: S → R1R1R1R and R → 0R | 1R | ε. Either one is enough. The stack is not needed.
+Q: Regex for strings that start and end with the same symbol.
+A: 0 ∪ 1 ∪ 0(0 ∪ 1)∗0 ∪ 1(0 ∪ 1)∗1. Length 1 is the first two pieces. She gave this language as a classification example: it is regular, so give an expression or a DFA.
 
-Q: Grammar for strings that start and end with the same symbol.
-A: S → 0 | 1 | 0A0 | 1A1, and A → ε | 0A | 1A. The empty string is out. One symbol is in, because it starts and ends with itself.
-
-Q: Grammar for odd length. Why must a recursive variable grow by a pair?
-A: S → 0 | 1 | 0S0 | 0S1 | 1S0 | 1S1. Adding one symbol each time would also build even lengths. A pair keeps the length odd.
-
-Q: Grammar for odd length whose middle symbol is 0. Why is the center 0 rather than ε?
-A: S → 0 | 0S0 | 0S1 | 1S0 | 1S1. The base string is the single symbol 0. ε has no middle symbol, so it cannot be the center.
-
-Q: Grammar for palindromes over {0, 1}.
-A: S → ε | 0 | 1 | 0S0 | 1S1. Wrap a matching symbol on both ends, or stop on empty or one symbol.
-
-Q: Grammar for the empty set. How is that different from the grammar for {ε}?
-A: The empty set has a start variable and no rule that builds a string. {ε} is the one rule S → ε.
-
-Q: Regex or grammar for even length and an odd number of 1s.
-A: Cut the string into pairs. E = 00 ∪ 11 keeps the 1-count even. O = 01 ∪ 10 flips it. The pattern (E∗ O E∗ O)∗ E∗ O E∗ has an odd number of flips. A grammar can use one variable for even 1s so far and one for odd 1s so far.
+Q: Regex for even length and an odd number of 1s.
+A: Cut the string into pairs. E = 00 ∪ 11 keeps the 1-count even. O = 01 ∪ 10 flips it. The pattern (E∗ O E∗ O)∗ E∗ O E∗ has an odd number of flips.
 
 Q: When is B equal to one-or-more copies of B?
 A: B = B+ exactly when BB ⊆ B. One copy is always in B+. If two copies stay inside B, longer concatenations stay inside too.
@@ -180,9 +141,6 @@ A: Even length accepts ε, because length 0 is even. Palindromes accept ε. The 
 Q: How do you draw a PDA that accepts only ε?
 A: Take an ε-arrow from the start into an accept state, and give real symbols no accepting run. That language is {ε}, not the empty set. The empty-set drawing has no accept state and no arrows.
 
-Q: Grammar rule S → ε versus a grammar with no useful rule.
-A: S → ε builds the language {ε}. A start variable with no rule that builds a string builds the empty language. Writing ε on the right-hand side is not the same as having no strings.
-
 Q: Does a star in a regex include the empty string?
 A: Yes. A∗ means zero or more copies, and zero copies is ε. The empty-set regex matches nothing, not even ε.
 
@@ -202,16 +160,13 @@ Q: Are regular languages closed under star?
 A: Yes. If A is regular, A∗ is regular. That includes the empty string, because star allows zero copies.
 
 Q: Are regular languages closed under intersection?
-A: Yes. If A and B are regular, A ∩ B is regular. Context-free languages are not closed under intersection with each other.
+A: Yes. You may use that when you classify. She is unlikely to ask you to prove it, because the closure she builds in class is union, concatenation, or star.
 
 Q: Are regular languages closed under complement?
-A: Yes. Swap the accept states on a complete DFA. Context-free languages are not closed under complement.
+A: Yes, by swapping accept states on a complete DFA. You may use it when you classify. She will not make an untaught closure the intended easy path.
 
-Q: Closure list: regular versus context-free.
-A: Regular: closed under union, concatenation, star, intersection, and complement. Context-free: closed under union, concatenation, star, and intersection with a regular language. Not closed under intersection of two context-free languages. Not closed under complement.
-
-Q: Which operations keep context-free languages context-free?
-A: Union, concatenation, star, and intersection with a regular language. Not intersection of two context-free languages. Not complement.
+Q: Which closure is she most likely to ask you to prove?
+A: One from class, often union. Default proof: an NFA picture, new start, ε into each old start, plus a sentence. If she says DFAs only, use the product and do not cite NFA equivalence. A false claim dies by one counterexample.
 
 Q: Over {0, 1}, which of these are strings: 0, 01001, ε, 11, 2, and 0, 1, 0?
 A: 0, 01001, ε, and 11 are strings. |01001| = 5 and |ε| = 0. The symbol 2 is not in the alphabet. A list with commas is not one string. |w| is the length. w is the string itself. ε is not the number 0.
@@ -274,7 +229,7 @@ Q: If a k-state NFA rejects something, how short a rejected string can you guara
 A: Some rejected string has length at most 2 to the k. Build the subset DFA. It has at most 2 to the k states and accepts the same language. Swap its accept states to get a DFA for the complement. The short-accepted-string fact then applies to that DFA.
 
 Q: Can the shortest rejected string really be exponential in the number of NFA states?
-A: Yes. With k states, make every state accepting and walk the reachable sets through all 2 to the k minus 1 subsets of the non-start states, ending at the empty set. The first reject then has length 2 to the k minus 1. For k = 3 that is 4. For k = 10 that is 512. That is half of 2 to the k, so the 2 to the k guarantee is the right size.
+A: Yes, up to about 2 to the k. She told the class not to worry about that blowup on this exam, and not to spend the review building a machine of size 2 to the k. Low priority for Thursday.
 
 Q: What are the steps of a regular pumping proof?
 A: You pick a string s that is in the language and has length at least p. The other side picks any legal cut s = xyz. You must show that every such cut can be pumped, with some i, out of the language. If one legal cut stays in, the proof is dead.
@@ -295,10 +250,31 @@ Q: What is the identical-letters trap?
 A: If every symbol is the same, the other side can hide the cut inside a block that still matches after pumping. Put a marker in the string, such as a different letter, so every short front cut is forced to break the pattern.
 
 Q: What is a context-free grammar, and what is a CFL?
-A: A grammar is variables V, terminals Σ, rules R, and a start variable. A CFL is a language some such grammar generates.
+A: A grammar has variables, terminals, rules, and a start variable. She will not ask you to write one on Exam 1. For this exam, context-free means some nondeterministic pushdown automaton accepts it. A grammar is only an optional shortcut.
 
 Q: Read the PDA label 1, A → B. What is X on a stack?
 A: Read 1, pop A, push B. X is a stack symbol you chose as a marker. It is not an input letter.
 
 Q: Use regular pumping on {a^n b^n c^n}. What is the cut, and which i breaks it?
-A: s = a^p b^p c^p, for example aabbcc when p = 2. |xy| ≤ p puts y in the a's. i = 0 deletes those a's, so the counts no longer match. This shows the language is not regular. It is not the five-piece context-free pumping argument.
+A: s = a^p b^p c^p, for example aabbcc when p = 2. |xy| ≤ p puts y in the a's. i = 0 deletes those a's, so the counts no longer match. This shows the language is not regular. It is not a context-free pumping argument, and that lemma is not on Exam 1.
+
+Q: Name the five parts of a DFA.
+A: (Q, Σ, δ, q0, F). Q is the states, Σ the alphabet, δ the transition function, q0 the start, F the accept states. She will not print this. A question may ask for the tuple, or a proof may need it. If she does not say DFA or NFA, either is fine, because an NFA can be simulated by a DFA.
+
+Q: How do you prove a string is accepted, using the definition of computation?
+A: Write the string as w1 through wn. List states r0 through rn. r0 is the start. Each next state is δ of the previous state and the next symbol. Accept when rn is in F. She might ask this instead of "write the definition."
+
+Q: How do you prove the regular pumping lemma at class level?
+A: Take a DFA and set p to its number of states. On a string of length at least p, the first p+1 states in the run cannot all be different, so some state repeats. x is the part before that repeat, y is the loop, z is the rest. Say why |y| > 0, why |xy| ≤ p, and why repeating the loop stays in the language. A state diagram is enough. Explain the repeat. Do not only say "pigeonhole."
+
+Q: What are the six parts of the pushdown automaton she will ask about?
+A: The nondeterministic one: (Q, Σ, Γ, δ, q0, F). Γ is the stack alphabet. δ can offer several moves, including ε. She will not ask about a deterministic PDA. The question is a state diagram, and she might also want the tuple.
+
+Q: How do you classify a language on this exam?
+A: Regular: give a DFA, an NFA, a regular expression, or a closure argument. Not regular: pumping lemma, by contradiction. Context-free but not regular: pumping, then a PDA. You cannot be asked to prove "not context-free." {0^n 1^n} is the basic example of that middle case.
+
+Q: What does a nondeterministic computation tree show?
+A: Every branch of an NFA on one input. A branch dies when a symbol has no arrow. The string is accepted if any leaf is an accept state. The subset-construction state after that input is the set of states still alive. One tree is not the whole subset DFA.
+
+Q: Is the construction enough, or do you also prove the machine correct?
+A: The construction is the proof. A picture plus a short description is enough for a closure she did in class, such as union: a new start with an ε-arrow into each old start. She does not want a separate correctness essay.
