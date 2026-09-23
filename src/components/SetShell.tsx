@@ -17,6 +17,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Mode, SetProgress, StudyMaterial, StudySet } from '../model';
+import type { DeckFilter } from '../lib/card-kinds';
 import { masteryPercent } from '../lib/store';
 import { isPaperSet, paperFrontMatter, paperSubtitle } from '../lib/paper-set';
 import { NotesView } from './NotesView';
@@ -32,6 +33,7 @@ interface SetShellProps {
   progress: SetProgress;
   mode: Mode;
   startIndex?: number;
+  startDeck?: DeckFilter;
   onNavigate: (mode: Mode) => void;
   onBack: () => void;
   /** Where the back link returns to — the Recall library or the Review list. */
@@ -42,6 +44,7 @@ interface SetShellProps {
   onSaveMarkdown: (markdown: string) => void;
   onAddNote: (note: string) => void;
   onDelete: () => void;
+  canDelete?: boolean;
   onExport: () => void;
   /** Re-fetch a paper from its identifier; returns what changed, for the notice. */
   onRefresh?: (set: StudySet) => Promise<string>;
@@ -64,7 +67,7 @@ const PAPER_TABS: { mode: Mode; label: string; icon: typeof BookOpen }[] = [
 ];
 
 export function SetShell(props: SetShellProps) {
-  const { set, material, progress, mode, startIndex = 0, onNavigate, onBack, backLabel = 'Library' } = props;
+  const { set, material, progress, mode, startIndex = 0, startDeck, onNavigate, onBack, backLabel = 'Library', canDelete = true } = props;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(set.markdown);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,9 +132,11 @@ export function SetShell(props: SetShellProps) {
             <button type="button" className="icon-btn" title="Export as JSON" aria-label="Export as JSON" onClick={props.onExport}>
               <Download size={16} aria-hidden />
             </button>
-            <button type="button" className="icon-btn icon-btn-danger" title="Remove set" aria-label="Remove set" onClick={props.onDelete}>
-              <Trash2 size={16} aria-hidden />
-            </button>
+            {canDelete ? (
+              <button type="button" className="icon-btn icon-btn-danger" title="Remove set" aria-label="Remove set" onClick={props.onDelete}>
+                <Trash2 size={16} aria-hidden />
+              </button>
+            ) : null}
           </div>
         </div>
         {isPaper ? (
@@ -229,7 +234,14 @@ export function SetShell(props: SetShellProps) {
         ) : (
           <>
             {mode === 'cards' && (
-              <Flashcards material={material} progress={progress} startIndex={startIndex} onAnswer={props.onAnswer} onToggleStar={props.onToggleStar} />
+              <Flashcards
+                material={material}
+                progress={progress}
+                startIndex={startIndex}
+                startDeck={startDeck}
+                onAnswer={props.onAnswer}
+                onToggleStar={props.onToggleStar}
+              />
             )}
             {mode === 'quiz' && <QuizView material={material} progress={progress} onAnswer={props.onAnswer} />}
             {mode === 'blanks' && <ClozeView material={material} progress={progress} onAnswer={props.onAnswer} />}

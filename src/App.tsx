@@ -32,6 +32,7 @@ import { CardsHome } from './components/CardsHome';
 import { SetShell } from './components/SetShell';
 import { SyncMenu } from './components/SyncMenu';
 import { isPaperSet } from './lib/paper-set';
+import { type DeckFilter, parseDeckFilter } from './lib/card-kinds';
 
 const SYNC_FLAG_KEY = 'recall.sync.on';
 
@@ -55,14 +56,20 @@ function setSyncFlag(on: boolean) {
 type Route =
   | { view: 'home' }
   | { view: 'cards' }
-  | { view: 'set'; setId: string; mode: Mode; card: number };
+  | { view: 'set'; setId: string; mode: Mode; card: number; deck?: DeckFilter };
 
 function parseHash(): Route {
   const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'set' && parts[1]) {
     const mode = (MODES as readonly string[]).includes(parts[2]) ? (parts[2] as Mode) : 'cards';
     const card = Number(parts[3]);
-    return { view: 'set', setId: parts[1], mode, card: Number.isFinite(card) ? card : 0 };
+    return {
+      view: 'set',
+      setId: parts[1],
+      mode,
+      card: Number.isFinite(card) ? card : 0,
+      deck: parseDeckFilter(parts[4]),
+    };
   }
   if (parts[0] === 'cards') return { view: 'cards' };
   return { view: 'home' };
@@ -80,8 +87,8 @@ function openCards() {
   navigate('/cards');
 }
 
-function openExamCards(index = 0) {
-  navigate(`/set/${EXAM_SET_ID}/cards/${index}`);
+function openExamCards(index = 0, deck?: DeckFilter) {
+  navigate(`/set/${EXAM_SET_ID}/cards/${index}${deck ? `/${deck}` : ''}`);
 }
 
 export default function App() {
@@ -383,9 +390,11 @@ export default function App() {
             progress={getProgress(data, activeSet.id)}
             mode={route.mode}
             startIndex={route.card}
+            startDeck={route.deck}
             onNavigate={(mode) => navigate(`/set/${activeSet.id}/${mode}`)}
             onBack={openCards}
             backLabel="Cards"
+            canDelete={activeSet.id !== EXAM_SET_ID}
             onAnswer={answerFor(activeSet.id)}
             onToggleStar={starFor(activeSet.id)}
             onBestTime={bestTimeFor(activeSet.id)}

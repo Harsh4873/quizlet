@@ -206,6 +206,8 @@ function firstSectionAnswer(blocks: Block[], headingIndex: number, depth: number
   for (let index = headingIndex + 1; index < blocks.length; index += 1) {
     const block = blocks[index];
     if (block.type === 'heading' && block.depth <= depth) break;
+    // Q/A pairs under a heading are already cards; a heading over them is a grouping, not a question.
+    if (block.type === 'para' && (QUESTION_RE.test(block.text) || ANSWER_RE.test(block.text))) continue;
     if (block.type === 'para' && block.text.length >= 28) pieces.push(block.text);
     else if (block.type === 'list' && pieces.length === 0) {
       pieces.push(...block.items.slice(0, 3).map((item) => item.text));
@@ -346,7 +348,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
   const clozes: ClozeCard[] = [];
   const seenClozes = new Set<string>();
   const termMatchers = terms
-    .filter((t) => t.source !== 'section' && t.term.length >= 3 && !/[?？]$/.test(t.term))
+    .filter((t) => t.source !== 'section' && t.source !== 'qa' && t.term.length >= 3 && !/[?？]$/.test(t.term))
     .map((t) => ({ term: t.term, re: new RegExp(`\\b${escapeRegExp(t.term)}\\b`, 'i') }))
     .sort((a, b) => b.term.length - a.term.length);
 
@@ -388,6 +390,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     if (clozes.length >= MAX_CLOZES) break;
     if (
       card.source === 'section'
+      || card.source === 'qa'
       || card.definition.length < 12
       || /[?？]$/.test(card.term)
       || /^(?:update|note|caveat)\b/i.test(card.term)
@@ -423,7 +426,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
 
 function ensureQuestionMark(q: string): string {
   const t = q.trim();
-  return /[?？]$/.test(t) ? t : `${t}?`;
+  return /[?？.!]$/.test(t) ? t : `${t}?`;
 }
 
 function countWords(blocks: Block[]): number {

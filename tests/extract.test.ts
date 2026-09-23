@@ -54,6 +54,13 @@ describe('term extraction', () => {
     expect(terms[0].source).toBe('qa');
   });
 
+  it('keeps a Q prompt that ends in a period instead of adding a question mark', () => {
+    const md = 'Q: State the three pumping rules.\nA: |xy| is at most p, y is not empty, and every pumped string stays in.\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(1);
+    expect(terms[0].term).toBe('State the three pumping rules.');
+  });
+
   it('harvests Q/A written on adjacent lines that merge into one paragraph', () => {
     const md = 'Q: Why do practice tests beat re-reading?\nA: Retrieval strengthens the trace.\n';
     const { terms } = extractStudyMaterial(md);
@@ -67,6 +74,13 @@ describe('term extraction', () => {
     const { terms } = extractStudyMaterial(md);
     expect(terms).toHaveLength(1);
     expect(terms[0].definition).toBe('the energy currency of the cell');
+  });
+
+  it('does not ask a key-idea question about a heading that only groups Q/A cards', () => {
+    const md = '## Rules\n\nQ: When does an NFA accept?\nA: When at least one path ends in an accept state.\n\nQ: When does it reject?\nA: Only when every path fails.\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(2);
+    expect(terms.every((term) => term.source === 'qa' && term.section === 'Rules')).toBe(true);
   });
 
   it('builds a coherent section question from prose-heavy notes', () => {

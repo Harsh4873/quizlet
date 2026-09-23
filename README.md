@@ -6,6 +6,7 @@ Quizlet is the owner's exam flashcard app, published at `https://harsh.bet/quizl
 
 - Ships exactly one study set: **Exam 1** (`exam-1-627`), bundled from the course Q/A notes.
 - Study modes: **Notes**, **Flashcards**, **Quiz**, **Blanks**, and **Match**.
+- Flashcards filter by card type: **Gym** (Terms, Rules, Theorems) or **Examples** (desk work with paper), taken from the deck's `##` headings.
 - Import/export replaces or downloads that one set (JSON or markdown).
 - Optional Sync uses the shared private owner vault (`recall_users/{vaultId}/sets`). On sync it ensures Exam 1 exists and tombstones old non-paper flashcard decks while leaving `paper-*` sets alone for Research.
 

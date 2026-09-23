@@ -2,6 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Search, Shuffle, Star, X } from 'lucide-react';
 import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { mulberry32, shuffle } from '../lib/questions';
+import {
+  DECK_FILTERS,
+  DECK_INFO,
+  type DeckFilter,
+  inDeck,
+  kindOf,
+  loadSavedDeck,
+  saveDeck,
+} from '../lib/card-kinds';
 import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
@@ -12,9 +21,23 @@ interface FlashcardsProps {
   onAnswer: (cardId: string, correct: boolean) => void;
   onToggleStar: (cardId: string) => void;
   startIndex?: number;
+  /** Card type to open with. An index without a type means the whole deck. */
+  startDeck?: DeckFilter;
 }
 
-export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0 }: FlashcardsProps) {
+function textSizeClass(text: string): string {
+  if (text.length > 240) return 'face-text-xlong';
+  if (text.length > 120) return 'face-text-long';
+  return '';
+}
+
+export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0, startDeck }: FlashcardsProps) {
+  const hasKinds = useMemo(() => material.terms.some((card) => kindOf(card)), [material]);
+  const [deckFilter, setDeckFilter] = useState<DeckFilter>(() => {
+    if (!hasKinds) return 'all';
+    if (startDeck) return startDeck;
+    return startIndex > 0 ? 'all' : (loadSavedDeck() ?? 'all');
+  });
   const [filter, setFilter] = useState<Filter>('all');
   const [termFirst, setTermFirst] = useState(true);
   const [seed, setSeed] = useState(0);
@@ -26,20 +49,30 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   const [listQuery, setListQuery] = useState('');
   const [offset, setOffset] = useState(0);
   const drag = useRef({ x: 0, y: 0, pointing: false });
+  // Once the learner changes the deck, the start card from the URL no longer applies.
+  const startConsumed = useRef(false);
+
+  const counts = useMemo(() => {
+    const result = {} as Record<DeckFilter, number>;
+    for (const f of DECK_FILTERS) result[f] = material.terms.filter((card) => inDeck(card, f)).length;
+    return result;
+  }, [material]);
 
   // The deck is frozen for the round: progress changes mid-round must not reorder it.
   const deck: TermCard[] = useMemo(() => {
     const source = material.terms.filter((card) => {
+      if (!inDeck(card, deckFilter)) return false;
       if (filter === 'weak') return (progress.cards[card.id]?.box ?? 0) < 3;
       if (filter === 'starred') return progress.cards[card.id]?.starred === true;
       return true;
     });
     return seed === 0 ? source : shuffle(source, mulberry32(seed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [material, filter, seed, roundKey]);
+  }, [material, filter, deckFilter, seed, roundKey]);
 
   const restart = (nextFilter?: Filter) => {
     if (nextFilter) setFilter(nextFilter);
+    startConsumed.current = true;
     setRoundKey((k) => k + 1);
     setIndex(0);
     setFlipped(false);
@@ -47,8 +80,19 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
     setDone(false);
   };
 
+  const chooseDeck = (next: DeckFilter) => {
+    setDeckFilter(next);
+    saveDeck(next);
+    restart();
+  };
+
   useEffect(() => {
-    if (seed !== 0) return;
+    startConsumed.current = false;
+    if (startDeck && hasKinds) setDeckFilter(startDeck);
+  }, [startIndex, startDeck, hasKinds]);
+
+  useEffect(() => {
+    if (seed !== 0 || startConsumed.current) return;
     const next = Math.min(Math.max(0, startIndex), Math.max(0, deck.length - 1));
     setIndex(next);
     setFlipped(false);
@@ -96,13 +140,49 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
     return <EmptyModeNote text="No term cards were found in this set. Add lines like “**Term**: definition” to your notes." />;
   }
 
+  const deckPicker = hasKinds ? (
+    <div className="deck-picker">
+      <div className="deck-chips" role="group" aria-label="Card type">
+        {DECK_FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            className={`chip deck-chip ${deckFilter === f ? 'chip-active' : ''}`}
+            aria-pressed={deckFilter === f}
+            onClick={() => chooseDeck(f)}
+          >
+            {DECK_INFO[f].label}
+            <span className="deck-chip-count">{counts[f]}</span>
+          </button>
+        ))}
+      </div>
+      <p className="deck-hint">
+        {DECK_INFO[deckFilter].place ? (
+          <span className={`place-tag place-${DECK_INFO[deckFilter].place}`}>
+            {DECK_INFO[deckFilter].place === 'gym' ? 'Gym' : 'Desk'}
+          </span>
+        ) : null}
+        {DECK_INFO[deckFilter].hint}
+      </p>
+    </div>
+  ) : null;
+
   if (deck.length === 0) {
     return (
-      <div className="mode-empty">
-        <p>{filter === 'weak' ? 'Nothing left to review — every card is mastered.' : 'No starred cards yet. Star cards while you study.'}</p>
-        <button type="button" className="btn" onClick={() => restart('all')}>
-          Study all cards
-        </button>
+      <div className="flashcards fade-in">
+        {deckPicker}
+        <div className="mode-empty">
+          <p>
+            {filter === 'weak'
+              ? 'Nothing left to review here. Every card is mastered.'
+              : filter === 'starred'
+                ? 'No starred cards here yet. Star cards while you study.'
+                : 'No cards of this type in the deck.'}
+          </p>
+          <button type="button" className="btn" onClick={() => restart('all')}>
+            Study all of these
+          </button>
+        </div>
       </div>
     );
   }
@@ -128,12 +208,19 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   }
 
   const starred = card ? progress.cards[card.id]?.starred === true : false;
+  const info = card ? kindOf(card) : undefined;
   const questionCard = card?.source === 'section';
-  const frontLabel = termFirst ? (questionCard ? 'Question' : 'Term') : (questionCard ? 'Answer' : 'Definition');
-  const backLabel = termFirst ? (questionCard ? 'Answer' : 'Definition') : (questionCard ? 'Question' : 'Term');
+  const promptLabel = info ? info.label : questionCard ? 'Question' : 'Term';
+  const answerLabel = info || questionCard ? 'Answer' : 'Definition';
+  const frontLabel = termFirst ? promptLabel : answerLabel;
+  const backLabel = termFirst ? answerLabel : promptLabel;
+  const frontText = card ? (termFirst ? card.term : card.definition) : '';
+  const backText = card ? (termFirst ? card.definition : card.term) : '';
+  const deckIds = new Set(deck.map((item) => item.id));
 
   return (
     <div className="flashcards fade-in">
+      {deckPicker}
       <div className="mode-toolbar">
         <div className="toolbar-group" role="group" aria-label="Card filter">
           {(['all', 'weak', 'starred'] as const).map((f) => (
@@ -143,7 +230,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
               className={`chip ${filter === f ? 'chip-active' : ''}`}
               onClick={() => restart(f)}
             >
-              {f === 'all' ? `All (${material.terms.length})` : f === 'weak' ? 'Weak' : 'Starred'}
+              {f === 'all' ? `All (${counts[deckFilter]})` : f === 'weak' ? 'Weak' : 'Starred'}
             </button>
           ))}
         </div>
@@ -210,14 +297,16 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
           <span className="flashcard-inner">
             <span className="flashcard-face flashcard-front">
               <span className="face-label">{frontLabel}</span>
-              <span className="face-text">{termFirst ? card.term : card.definition}</span>
-              <span className="face-hint">Tap or press space to flip</span>
+              <span className={`face-text ${textSizeClass(frontText)}`}>{frontText}</span>
+              <span className="face-hint">Tap to flip</span>
             </span>
             <span className="flashcard-face flashcard-back">
               <span className="face-label">{backLabel}</span>
-              <span className={`face-text ${card.figure ? 'face-text-with-figure' : ''}`}>{termFirst ? card.definition : card.term}</span>
+              <span className={`face-text ${card.figure ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
               {card.figure ? <ExamFigure id={card.figure} /> : null}
-              <span className="face-section">{card.section}</span>
+              <span className="face-section">
+                {info ? `${info.heading} · ${info.place === 'gym' ? 'gym' : 'desk'}` : card.section}
+              </span>
             </span>
           </span>
         </button>
@@ -276,6 +365,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
       <ul className="card-index card-index-study">
         {material.terms
           .filter((term) => {
+            if (!deckIds.has(term.id)) return false;
             const needle = listQuery.trim().toLowerCase();
             if (!needle) return true;
             return `${term.term} ${term.definition}`.toLowerCase().includes(needle);
