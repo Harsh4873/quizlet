@@ -256,7 +256,7 @@ Q: If a k-state NFA rejects something, how short a rejected string can you guara
 A: Some rejected string has length at most 2 to the k. Build the subset DFA. It has at most 2 to the k states and accepts the same language. Swap its accept states to get a DFA for the complement. The short-accepted-string fact then applies to that DFA.
 
 Q: Can the shortest rejected string really be exponential in the number of NFA states?
-A: Yes, up to about 2 to the k. She told the class not to worry about that blowup on this exam, and not to spend the review building a machine of size 2 to the k. Low priority for Thursday.
+A: Yes. The one 8-state machine only shows k is too small. A family of machines, one for every k, can push the first rejected string to exponential length, so the 2 to the k bound is about the right size. She said not to worry about this blowup on Thursday. Low priority.
 
 Q: Two DFAs have k1 and k2 states. If their union accepts something, how short a member is guaranteed?
 A: Shorter than the larger of k1 and k2. One of the machines accepts something, so its shortest accepted string has fewer letters than it has states, and that string is in the union. Low priority: this problem is not in the posted solutions.
