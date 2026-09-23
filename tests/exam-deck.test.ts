@@ -14,6 +14,16 @@ describe('Exam 1 deck source', () => {
     expect(terms.every((term) => term.source === 'qa')).toBe(true);
   });
 
+  it('shows every prompt and answer exactly as written', () => {
+    // A period followed by "A:"-like text inside a prompt can split the card in the wrong place.
+    const { terms } = extractStudyMaterial(EXAM_MARKDOWN);
+    terms.forEach((term, index) => {
+      expect(term.term).toBe(questions[index].slice('Q: '.length));
+      const answer = answers[index].slice('A: '.length).replace(/\[\[fig:[a-z0-9-]+\]\]/g, ' ');
+      expect(term.definition).toBe(answer.replace(/\s+/g, ' ').trim());
+    });
+  });
+
   it('keeps every answer short enough to show without clipping', () => {
     for (const line of answers) {
       expect(line.length - 'A: '.length, line.slice(0, 60)).toBeLessThanOrEqual(420);

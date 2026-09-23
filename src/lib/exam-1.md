@@ -23,11 +23,17 @@ A: The set of strings the machine accepts.
 Q: What is a regular language?
 A: A language for which some DFA accepts exactly those strings, and no others.
 
+Q: What are the regular operations on languages?
+A: Union A ∪ B: strings in either. Concatenation A ∘ B: a string of A followed by a string of B. Star A∗: zero or more strings of A glued together, so ε is always in A∗. With A = {a, b} and B = {c, d}, A ∘ B = {ac, ad, bc, bd}.
+
 Q: What is a DFA?
 A: A machine that reads one symbol at a time and is always in one state. It accepts if it ends in a double circle. Form: (Q, Σ, δ, q0, F).
 
 Q: Name the five parts of a DFA.
 A: (Q, Σ, δ, q0, F). Q is the states, Σ the alphabet, δ the transition function, q0 the start, F the accept states. She will not print this. A question may ask for the tuple, or a proof may need it. If she does not say DFA or NFA, either is fine, because an NFA can be simulated by a DFA.
+
+Q: How is the NFA 5-tuple different from the DFA 5-tuple?
+A: Same five parts, (Q, Σ, δ, q0, F). A DFA has δ: Q × Σ → Q, exactly one next state. An NFA has δ: Q × Σε → P(Q), a set of next states, and it may also move on ε. The empty set means that branch dies.
 
 Q: What is a transition chart, and what does a blank cell mean?
 A: A table of δ: one row per state and one column per input symbol. For a PDA the columns are input and stack-top pairs. Each cell says where that move goes. In a PDA chart a blank cell means no move.
@@ -42,7 +48,10 @@ Q: What is an accepting path?
 A: A walk that starts at the start state, follows arrows whose labels spell the string, and ends on an accept state. ε-arrows read nothing. The string is just the letters on the arrows you used.
 
 Q: What is an NFA?
-A: One letter may have no arrow, one arrow, or many arrows. Accept if at least one run ends in an accept state. A missing arrow kills only that branch.
+A: One letter may have no arrow, one arrow, or many arrows, and ε-arrows move without reading. It accepts if at least one path ends in an accept state. It rejects only if every path fails. A missing arrow kills only that branch.
+
+Q: Is an ε-arrow the same as accepting the empty string?
+A: No. On an arrow, ε means read nothing, and on a PDA also pop or push nothing. A machine accepts the empty string only if some path of ε-moves reaches an accept state before any symbol is read. A machine can have ε-arrows and still reject ε.
 
 Q: What does deterministic mean in this course, and what does nondeterministic mean?
 A: Deterministic: each state has exactly one move for each symbol, so a string has exactly one path. That is a DFA. Nondeterministic: a symbol can have zero, one, or many moves, plus ε-moves, and the machine accepts if some path accepts. That is an NFA, and it is also the default PDA in this course.
@@ -59,11 +68,14 @@ A: Every string over the alphabet that is not in the language. If a machine acce
 Q: What is the complement of the empty language, and of {ε}?
 A: The complement of ∅ is every string. The complement of {ε} is every nonempty string.
 
-Q: What does closed under intersection mean?
-A: If you take any two languages in the family, their overlap is still in the family.
+Q: What does closed under an operation mean?
+A: Apply the operation to languages in the family and the result is still in the family. Regular languages are closed under union, concatenation, star, intersection, complement, and difference.
 
 Q: What are the three regex operations?
 A: A letter is a pattern. A ∪ B means or. A∗ means zero or more copies. Patterns written next to each other mean then.
+
+Q: Name two strings in and two strings out of a∗ ∪ b∗, (aaa)∗, and (ε ∪ a)b.
+A: a∗ ∪ b∗: in ε and bbb; out ab and ba, since the letters cannot mix. (aaa)∗: in ε and aaa; out a and aa. (ε ∪ a)b is exactly {b, ab}, so ε and aab are out.
 
 Q: What is a perfect shuffle of two languages?
 A: Take a1 … ak from A and b1 … bk from B, the same length, and zip them one symbol at a time: a1 b1 a2 b2 … ak bk. The odd spots spell the A string and the even spots spell the B string. Different lengths give no perfect shuffle.
@@ -89,43 +101,55 @@ A: The stack is extra memory for symbols already read. You push a marker, then p
 Q: What are the six parts of the pushdown automaton she will ask about?
 A: The nondeterministic one: (Q, Σ, Γ, δ, q0, F). Γ is the stack alphabet. δ can offer several moves, including ε. She will not ask about a deterministic PDA. The question is a state diagram, and she might also want the tuple.
 
-Q: What does an arrow label read, pop → push mean?
-A: Read that symbol (or ε for none), pop the named stack symbol, then push the named stack symbol.
-
-Q: Read the PDA label 1, A → B. What is X on a stack?
-A: Read 1, pop A, push B. X is a stack symbol you chose as a marker. It is not an input letter.
+Q: Read the PDA label 1, A → B. What does each part mean, and what is X?
+A: Read 1 from the input, pop A off the top of the stack, then push B. An ε in any slot means do nothing there: read nothing, pop nothing, or push nothing. X is a stack symbol you picked as a marker, not an input letter.
 
 Q: What is $ for on the stack?
 A: A bottom marker. Accept only when $ is on top, so leftover symbols block a fake accept. It stands in for a test the machine does not have: stack empty.
 
-Q: What is the difference between ε on an arrow and the string ε?
-A: On an arrow, ε means read nothing or pop nothing or push nothing. The string ε is the empty input. A machine can use ε-arrows and still reject the empty string.
-
-Q: What is a context-free grammar, and what is a CFL?
-A: A grammar has variables, terminals, rules, and a start variable. She will not ask you to write one on Exam 1. For this exam, context-free means some nondeterministic pushdown automaton accepts it. A grammar is only an optional shortcut.
-
 ## Rules
+
+Q: What is the shape of Exam 1?
+A: About five questions: one classification (regular, or context-free but not regular), a closure or the pumping lemma proof from class, one nondeterministic PDA diagram, a 5-tuple used for real (a run, a construction, or the subset DFA), and one homework problem around the perfect-shuffle level. Maybe one easier surprise. Not three pumping problems.
+
+Q: What is not on Exam 1?
+A: Turing machines, deterministic PDAs, writing a context-free grammar, the context-free pumping lemma (so no "not context-free" proofs), Myhill–Nerode, the GNFA proof, the recursive definition of regular languages, reciting the definition of computation, and a new 2^k blowup problem. Minimum pumping length is unlikely.
+
+Q: Which closure is she most likely to ask you to prove?
+A: One from class, often union. Default proof: an NFA picture, new start, ε into each old start, plus a sentence. If she says DFAs only, use the product and do not cite NFA equivalence. A false claim dies by one counterexample.
+
+Q: Is the construction enough, or do you also prove the machine correct?
+A: The construction is the proof. A picture plus a short description is enough for a closure she did in class, such as union: a new start with an ε-arrow into each old start. She does not want a separate correctness essay.
+
+Q: How do you classify a language on this exam?
+A: Regular: give a DFA, an NFA, a regular expression, or a closure argument. Not regular: pumping lemma, by contradiction. Context-free but not regular: pumping, then a PDA. You cannot be asked to prove "not context-free." {0^n 1^n} is the basic example of that middle case.
+
+Q: Can you use that {0^n 1^n} is not regular without proving it?
+A: Yes, as a known example inside a counterexample or a closure argument, unless the question asks you to prove it. Prefer familiar languages like that one when you disprove a claim.
+
+Q: When do you open a proof with "assume it is regular"?
+A: Only when you are showing a language is not regular: assume it, then pump or intersect until something breaks. To show a language is regular, build it: a DFA, an NFA, a regular expression, or closure from pieces you already know are regular. Closure runs forward only. A regular intersection does not make the other piece regular.
+
+Q: If L sits inside a regular language, must L be regular?
+A: No. {0^n 1^n} sits inside Σ∗, which is regular, and it is not regular. A false claim dies with one concrete counterexample.
+
+Q: Does closure under union cover infinitely many unions?
+A: No, only finitely many. {0^n 1^n} is the union of the single strings ε, 01, 0011, and so on. Each one is finite, so regular, but the infinite union is not regular.
 
 Q: When does a DFA accept ε?
 A: Only if the start state is an accept state. No symbol has been read yet, so the machine is still at the start.
 
-Q: Which of these accept the empty string: even length, odd length, at least three 1s, same first and last, middle 0, palindrome, empty set?
-A: Even length accepts ε, because length 0 is even. Palindromes accept ε. The others reject it. The empty set rejects every string, including ε.
+Q: Which of these contain ε: {0^n 1^n}, starts and ends with the same symbol, an even number of 1s, ww^R, i = j or i = k, a^(2^n), and 0∗1∗?
+A: {0^n 1^n} with n = 0, an even number of 1s (zero is even), ww^R with w = ε, i = j or i = k with every count 0, and 0∗1∗ all contain ε. Starts and ends with the same symbol needs a symbol, and a^(2^n) starts at length 1.
 
 Q: Does a star in a regex include the empty string?
 A: Yes. A∗ means zero or more copies, and zero copies is ε. The empty-set regex matches nothing, not even ε.
 
+Q: What are the ε and ∅ rules for regular expressions?
+A: R ∪ ∅ = R. R ∘ ε = R. R ∘ ∅ = ∅, because there is nothing to glue on. ∅∗ = {ε}, because star allows zero copies. R ∪ ε is not R unless ε was already in R.
+
 Q: How do you complement a DFA?
 A: Keep every state and every arrow. Swap which states are accept. The DFA must be complete, because a missing arrow is a hidden reject sink and has to be swapped too.
-
-Q: When does an NFA accept, and when does it reject?
-A: It accepts if at least one path ends in an accept state. It rejects only if every path fails. One successful path is enough to accept. Rejection needs all of them.
-
-Q: On an NFA, is an ε-arrow the same as accepting the empty string?
-A: No. An ε-arrow is a free jump that reads nothing. The NFA accepts ε only when some path of those jumps reaches an accept state before any symbol is read.
-
-Q: Does gluing two NFAs with ε-arrows put ε in the union?
-A: Not by itself. The new ε-arrows only choose a machine. ε is in the union only if it was already accepted by one of the two machines.
 
 Q: Why doesn't swapping accept states complement an NFA?
 A: An NFA says yes if some path ends in an accept state. Say reading a gives one path to an accept state and one to a plain state, so the NFA accepts a. After swapping, the plain state is accept, so the new NFA still accepts a. A DFA has exactly one path per string, so swapping does complement a DFA. Convert the NFA to a DFA first.
@@ -133,32 +157,35 @@ A: An NFA says yes if some path ends in an accept state. Say reading a gives one
 Q: How do you build an NFA for the union of two NFAs?
 A: Add a new start state. Draw an ε-arrow from it into each old start. Accept if either machine would accept. [[fig:nfa-union]]
 
+Q: How do you build an NFA for the concatenation of two NFAs?
+A: Start at the first machine's start. Draw an ε-arrow from every accept state of the first machine to the second machine's start. Those old accept states stop accepting; only the second machine's accept states accept. You do not know where the split is, so the ε-arrows guess it.
+
+Q: How do you build an NFA for the star of an NFA?
+A: Add a new start state that is accepting, so ε is in, with an ε-arrow to the old start. Draw an ε-arrow from every old accept state back to the old start. Old accept states stay accepting. Do not just make the old start accepting: arrows coming back into it could accept strings that are not in the star.
+
+Q: How do you make an NFA with exactly one accept state?
+A: Add one new accept state. Draw an ε-arrow from every old accept state to it, and make the old accept states non-accepting. Every accepting path now ends in the one new state.
+
+Q: Does gluing two NFAs with ε-arrows put ε in the union?
+A: Not by itself. The new ε-arrows only choose a machine. ε is in the union only if it was already accepted by one of the two machines.
+
 Q: How many states do you need for k yes-or-no facts?
 A: 2 to the k. Two facts give 4 states. Three facts give 8. Name the states first, then draw the arrows.
 
 Q: What does a 2^k bound next to a k-state NFA usually mean?
 A: Turn the NFA into a DFA whose states are sets of NFA states. Each NFA state is in or out of the set, so there are at most 2^k sets. Needing the complement of an NFA's language means the same move. A 2^n inside a language, like a^(2^n), is only a string length, and that is a pumping problem.
 
-Q: A path visits m different states and repeats none. How many letters can it read?
-A: At most m − 1. The first state costs no letter, and each arrow reads at most one. Six states in a row, P0 through P5, have five arrows between them. A sixth letter would need a seventh visit, so some state would repeat.
-
-Q: When do you open a proof with "assume it is regular"?
-A: Only when you are showing a language is not regular: assume it, then pump or intersect until something breaks. To show a language is regular, build it: a DFA, an NFA, a regular expression, or closure from pieces you already know are regular. Closure runs forward only. A regular intersection does not make the other piece regular.
-
-Q: How do you classify a language on this exam?
-A: Regular: give a DFA, an NFA, a regular expression, or a closure argument. Not regular: pumping lemma, by contradiction. Context-free but not regular: pumping, then a PDA. You cannot be asked to prove "not context-free." {0^n 1^n} is the basic example of that middle case.
+Q: Does "a machine would have to count" prove a language is not regular?
+A: No. That is intuition, not proof. Equal numbers of 01 and 10 substrings sounds like counting, but it is regular: those counts match exactly when the string is empty or starts and ends with the same symbol. Prove not regular with the pumping lemma.
 
 Q: What are the steps of a regular pumping proof?
 A: You pick a string s that is in the language and has length at least p. The other side picks any legal cut s = xyz. You must show that every such cut can be pumped, with some i, out of the language. If one legal cut stays in, the proof is dead.
-
-Q: Who picks the cut?
-A: Not you. You pick the string. They may pick any legal cut in the front p symbols. You have to win against all of those cuts, not just the one that helps you.
 
 Q: How do you avoid picking a string that has a safe cut?
 A: Before you write a cut, hunt for one yourself. Try every y the first p letters allow, deleting it and copying it. If any legal cut stays in the language, throw that string out. In the one-a language, aabbccc fails: deleting both a's leaves bbccc, which is still in.
 
 Q: What is the identical-letters trap?
-A: If every symbol is the same, the other side can hide the cut inside a block that still matches after pumping. Put a marker in the string, such as a different letter, so every short front cut is forced to break the pattern.
+A: If every symbol is the same, the other side can pick a cut that keeps the pattern. For three copies of one block with p = 4, twelve b's pumped by three b's gives fifteen, still three blocks of five. Put a marker letter in the string so every short front cut breaks the pattern.
 
 Q: How do you shrink a language before pumping it?
 A: Intersect it with a regular language that fixes the shape, like exactly one a, then b's, then c's. If the original were regular, the intersection would be regular too: run both machines as a product and accept only when both accept. Then pump the smaller language, where no legal cut can switch a rule off.
@@ -166,32 +193,23 @@ A: Intersect it with a regular language that fixes the shape, like exactly one a
 Q: In a language like 0^k 1 u 0^k, does choosing u add symbols?
 A: No. u only labels symbols already in the string. In 000001000, five leading 0s force k = 5, and only three 0s come after the 1, so no choice of u leaves five 0s at the end. u can soak up extra 0s after the 1, which is why pumping down can stay in: 01000 is 0, 1, u = 00, 0.
 
+Q: Why does reading p symbols on a p-state DFA force a repeated state?
+A: Reading n symbols visits n + 1 states, counting the start. With p states, p symbols give p + 1 visits, so some state repeats. That is the pigeonhole step in the pumping lemma proof. A path with no repeated state reads at most p − 1 symbols.
+
+Q: Given a DFA and a long accepted string, how do you find the proof's p, x, y, and z?
+A: p is the number of states. Run the string and list the states. Find the first state that repeats: x is what you read before its first visit, y is what you read between the two visits, and z is the rest. Example: on a 3-state DFA where 0 loops at the start state, s = 0010110 gives x = ε, y = 0, z = 010110.
+
 Q: How do you prove a string is accepted, using the definition of computation?
 A: Write the string as w1 through wn. List states r0 through rn. r0 is the start. Each next state is δ of the previous state and the next symbol. Accept when rn is in F. She might ask this instead of "write the definition."
 
 Q: When does a pop arrow fail to fire?
 A: When the symbol it needs is not on top of the stack. That branch dies. If every branch dies, the string is rejected.
 
-Q: What has to be written above each PDA diagram?
-A: A short informal description: what the machine remembers, what it pushes, and when it accepts.
+Q: What should you write next to a PDA diagram?
+A: A sentence or two: what the stack holds and when the machine accepts. She grades the pieces of the argument, so say what each part does. If the question says draw a state diagram, the diagram is still required.
 
 Q: If a question says give a DFA, is a PDA an acceptable drawing?
 A: No. Draw the DFA with plain 0 and 1 arrows. A PDA that ignores the stack is the same idea in the wrong costume.
-
-Q: Is the construction enough, or do you also prove the machine correct?
-A: The construction is the proof. A picture plus a short description is enough for a closure she did in class, such as union: a new start with an ε-arrow into each old start. She does not want a separate correctness essay.
-
-Q: Which closure is she most likely to ask you to prove?
-A: One from class, often union. Default proof: an NFA picture, new start, ε into each old start, plus a sentence. If she says DFAs only, use the product and do not cite NFA equivalence. A false claim dies by one counterexample.
-
-Q: Can Exam 1 ask you to prove a language is not context-free?
-A: No. The context-free pumping lemma is not on this exam. You can show context-free but not regular: pumping for not regular, then a pushdown automaton. You cannot show "not context-free."
-
-Q: Will she ask you to write a context-free grammar?
-A: No. A grammar is allowed only if you choose it to show a language is context-free. The question she described is a PDA state diagram. Know that a language is context-free exactly when some nondeterministic PDA accepts it.
-
-Q: Is the minimum pumping length on Exam 1?
-A: Not expected. She grouped it with homework that was not in the lecture, along with Myhill–Nerode. A past exam had a minimum length. Do not drill it before the classification proof, the lemma proof, closure, or a PDA diagram.
 
 ## Theorems
 
@@ -207,23 +225,17 @@ A: Take a DFA and set p to its number of states. On a string of length at least 
 Q: What does the NFA-to-DFA theorem say, and how is the DFA built?
 A: Every NFA has a DFA for the same language. Each DFA state is the set of NFA states you could be in, with ε-arrows followed. The start is the start state plus its ε-reach. On a symbol, move every state in the set, then follow ε-arrows. A set accepts if it holds an NFA accept state. k NFA states give at most 2^k sets.
 
-Q: If an NFA has k states, how many states can the subset DFA have?
-A: At most 2 to the k. Each NFA state is either in the current set or out of it. For k = 3 that is 8. For k = 4 that is 16.
-
 Q: Are deterministic and nondeterministic machines equally powerful?
 A: For finite automata, yes: every NFA has a DFA for the same language, with up to 2^k states. For pushdown automata, no: nondeterministic PDAs recognize more, and a machine like the palindrome one guesses the middle. Deterministic PDAs are not on Exam 1.
 
 Q: What does the regular expression theorem say?
 A: A language is regular exactly when some regular expression describes it. Use it to prove a language is regular. She will not require an expression, and she will not ask you to reproduce the proof.
 
-Q: Are regular languages closed under union?
-A: Yes. If A and B are regular, A ∪ B is regular.
+Q: How are context-free languages and PDAs related?
+A: A language is context-free exactly when some nondeterministic PDA accepts it, the same role regular expressions play for regular languages. On this exam, show context-free with a PDA diagram. A grammar is allowed as your own shortcut, never required.
 
-Q: Are regular languages closed under concatenation?
-A: Yes. If A and B are regular, the strings of A followed by strings of B are regular.
-
-Q: Are regular languages closed under star?
-A: Yes. If A is regular, A∗ is regular. That includes the empty string, because star allows zero copies.
+Q: Are regular languages closed under union, concatenation, and star?
+A: Yes, all three. These are the closures proved in class, so she may ask you to prove one with an NFA picture plus a short description. Star always contains ε, because zero copies is allowed.
 
 Q: Are regular languages closed under intersection?
 A: Yes. You may use that when you classify. She is unlikely to ask you to prove it, because the closure she builds in class is union, concatenation, or star.
@@ -244,25 +256,16 @@ Q: What goes wrong if a proof only says three copies equal two copies?
 A: That is not the subset condition BB ⊆ B, and it is not true of an arbitrary B. It does not prove either direction.
 
 Q: If a k-state NFA accepts anything, how short an accepted string can you guarantee?
-A: Some accepted string has length at most k. Take a shortest accepted string and one accepting path. If a state repeats, the section between the two visits is a loop. Delete it and you still accept, but the string is shorter, which cannot happen. So the path never repeats a state. At most k states means at most k symbols. A loop-free path is actually at most k minus 1 symbols. The bound you need is at most k.
-
-Q: Does "some accepted string has length at most k" limit every accepted string?
-A: No. It promises one short yes. The same machine can accept longer strings too. A 2-state machine that accepts a, ab, abb, and so on passes, because a has length 1.
+A: Some accepted string has length at most k. That is one short yes, not a limit on every yes. Take a shortest accepting path. If a state repeats, delete the loop between the visits: still accepted, but shorter, which cannot happen. So no state repeats, the path has at most k − 1 arrows, and the string has at most k − 1 letters.
 
 Q: Does the length-k guarantee also work for the shortest rejected string?
-A: No. One path can prove a yes, but a no needs every path to fail. An 8-state NFA can accept every string up to length 10 and first reject at length 11, which is longer than k.
+A: No. One path can prove a yes, but a no needs every path to fail. A 3-cycle and a 4-cycle joined by ε-arrows (8 states) first reject together at length 11, which is longer than 8.
 
 Q: If a k-state NFA rejects something, how short a rejected string can you guarantee?
 A: Some rejected string has length at most 2 to the k. Build the subset DFA. It has at most 2 to the k states and accepts the same language. Swap its accept states to get a DFA for the complement. The short-accepted-string fact then applies to that DFA.
 
 Q: Can the shortest rejected string really be exponential in the number of NFA states?
 A: Yes. The one 8-state machine only shows k is too small. A family of machines, one for every k, can push the first rejected string to exponential length, so the 2 to the k bound is about the right size. She said not to worry about this blowup on Thursday. Low priority.
-
-Q: Two DFAs have k1 and k2 states. If their union accepts something, how short a member is guaranteed?
-A: Shorter than the larger of k1 and k2. One of the machines accepts something, so its shortest accepted string has fewer letters than it has states, and that string is in the union. Low priority: this problem is not in the posted solutions.
-
-Q: Two DFAs have k1 and k2 states. If their union misses some string, how short a missed string is guaranteed?
-A: Shorter than k1 times k2. Run both DFAs together as pairs. A missed string ends on a pair where both reject. The shortest missed string repeats no pair, so it has at most k1 times k2 minus 1 letters. Low priority: not in the posted solutions.
 
 ## Examples
 
@@ -275,9 +278,6 @@ A: Same flip arrows. q0 is start and not accept. q1 is accept. [[fig:pda-odd]]
 Q: DFA for strings ending in 1.
 A: q0 is start. q1 is accept. 0 stays at q0, 1 goes to q1. From q1, 1 stays and 0 returns to q0. [[fig:end-1]]
 
-Q: DFA for strings ending in 0.
-A: q0 is start. q1 is accept. 1 stays at q0, 0 goes to q1. From q1, 0 stays and 1 returns to q0. [[fig:end-0]]
-
 Q: DFA for strings with at least one 1.
 A: q0 loops on 0. The first 1 goes to q1, which is accept and loops on 0 and 1. [[fig:one-1]]
 
@@ -289,6 +289,12 @@ A: Same arrows as the even machine. Swap the accept state, so q1 is accept and q
 
 Q: DFA for strings that start and end with the same symbol.
 A: Five states. From the start, 0 goes to the 0-side and 1 goes to the 1-side. Each side has two states: the last symbol matches the first (accept) or it does not. Every symbol moves you to the state for the symbol just read. The start is not accept, so ε is out, while 0 and 1 are in.
+
+Q: DFA for unary strings whose length is a multiple of n.
+A: n states in a cycle: state i means the length so far leaves remainder i. Each a moves to the next state, and the last one wraps to the first. State 0 is the start and the only accept state, so ε is in.
+
+Q: DFA for binary numbers divisible by n, read left to right.
+A: One state per remainder, 0 through n − 1. Reading bit b from remainder r goes to (2r + b) mod n, because appending a bit doubles the number and adds b. Start and accept are both remainder 0.
 
 Q: Product machine for even length and an odd number of 1s. How many states, and what does each remember?
 A: Four states, one for each pair of facts. q0 even/even, start. q1 odd/odd. q2 even/odd. q3 odd/even. A 1 flips both facts. A 0 flips only the length. [[fig:product]]
@@ -305,9 +311,6 @@ A: The start state is accept. Any real symbol leaves into a rejecting sink and s
 Q: Write the 5-tuple of the DFA that simulates an NFA (Q, Σ, δ, q0, F).
 A: States: every subset of Q. Start: q0 plus every state it reaches by ε-arrows. On symbol a from a set R: every state reachable from some state in R by reading a, then following ε-arrows. Accept: every subset that contains a state of F. She may hand you the power set so this stays short.
 
-Q: Build an NFA whose shortest rejected string is longer than its number of states.
-A: Over {a}: a start state with ε-arrows into a 3-cycle and a 4-cycle, 8 states. Only the last state of each cycle rejects, so the 3-cycle says no at lengths 2, 5, 8, 11, and so on, and the 4-cycle at 3, 7, 11, and so on. The NFA accepts if either cycle says yes, so the first length where both say no is 11. a^11 is longer than 8.
-
 Q: Regex for at least three 1s.
 A: 0∗10∗10∗1(0 ∪ 1)∗. A regular expression is a legal way to prove a language is regular. She will not require one, and she will not ask for a grammar.
 
@@ -320,8 +323,29 @@ A: Cut the string into pairs. E = 00 ∪ 11 keeps the 1-count even. O = 01 ∪ 1
 Q: Is {0^k u 0^k : k ≥ 1, u any string} regular?
 A: Yes. k may be 1, so it is every string that starts with 0, ends with 0, and has length at least 2: 0(0 ∪ 1)∗0. 00 and 010 are in. 0 and 01 are out. The posted answer 0+(0 ∪ 1)∗0+ is the same language.
 
+Q: Classify decimal strings whose last digit already appeared earlier.
+A: Regular. An NFA guesses the earlier position, remembers that digit d in its state, and accepts only if the input ends right after it reads d again. As a regular expression it is the union over the ten digits d of Σ∗ d Σ∗ d.
+
+Q: Prove (00 ∪ 11)∗ is regular using closure only.
+A: {00} and {11} are finite languages, so they are regular. Union keeps the result regular, and star keeps it regular. Name the two operations and you are done.
+
+Q: Prove A − B is regular when A and B are, using DFAs only.
+A: Run the product of the two DFAs: states are pairs, and each symbol moves both parts. Accept a pair when the first part accepts and the second part does not. That is the intersection idea and the complement idea in one machine.
+
 Q: Write the 5-tuple for the perfect shuffle DFA.
 A: From DFAs (QA, Σ, δA, sA, FA) and (QB, Σ, δB, sB, FB): states QA × QB × {A, B}, start (sA, sB, A), accept FA × FB × {A}. δ((p, q, A), c) = (δA(p, c), q, B). δ((p, q, B), c) = (p, δB(q, c), A). ε is in exactly when both start states accept.
+
+Q: Show the reverse of a regular language is regular.
+A: Take an NFA or DFA for A and reverse every arrow. Add a new start state with ε-arrows to every old accept state. The old start becomes the only accept state. An accepting path for w in the old machine, walked backward, is an accepting path for the reverse of w in the new one.
+
+Q: Show DROP-OUT(A), every string of A with one symbol removed, is regular.
+A: Make two copies of A's DFA. Copy 1 means nothing has been dropped yet, copy 2 means one symbol has. From each state q in copy 1, for every symbol a, draw an ε-arrow to the copy-2 state that q reaches on a: that a is the dropped symbol. Start in copy 1. Accept only in copy 2's accept states.
+
+Q: For regular L and a fixed symbol a, show L/a = {w : wa ∈ L} is regular. What about L/B?
+A: Keep L's DFA and change only the accept states. For L/a, a state q accepts when reading a from q lands in an old accept state. For L/B = {w : wy ∈ L for some y in B}, a state accepts when some string of B leads from it to an old accept state. B does not even have to be regular.
+
+Q: How do you change a DFA for NOPREFIX(A) and NOEXTEND(A)?
+A: NOPREFIX keeps strings of A with no proper prefix in A: send every arrow leaving an accept state to a dead state, so the run cannot pass an accept state early. NOEXTEND keeps strings of A that are not a proper prefix of another string in A: an accept state stays accepting only if no nonempty string leads from it to an accept state.
 
 Q: Classify {0^n 1^n} and prove both halves.
 A: Context-free, not regular. Not regular: take s = 0^p 1^p. |xy| ≤ p puts y in the 0s, and i = 2 gives more 0s than 1s. Context-free: a PDA pushes $, pushes a 0 for each 0, pops one for each 1, then pops $ and accepts.
@@ -329,8 +353,11 @@ A: Context-free, not regular. Not regular: take s = 0^p 1^p. |xy| ≤ p puts y i
 Q: Use pumping to show {0^n 1^n 2^n} is not regular.
 A: Take s = 0^p 1^p 2^p. |xy| ≤ p forces y into the leading 0s. Pumping to i = 2 adds 0s and the three counts no longer match.
 
-Q: Use regular pumping on {a^n b^n c^n}. What is the cut, and which i breaks it?
-A: s = a^p b^p c^p, for example aabbcc when p = 2. |xy| ≤ p puts y in the a's. i = 0 deletes those a's, so the counts no longer match. This shows the language is not regular. It is not a context-free pumping argument, and that lemma is not on Exam 1.
+Q: Show {www : w ∈ {a, b}∗} is not regular.
+A: Take s = a^p b a^p b a^p b, three copies of a^p b. Every legal y is a's from the first block. Delete it (i = 0): the three b's now split the string into a^(p−k) b, a^p b, a^p b, which are not equal, so it leaves. All a's is the wrong string, because a cut of three a's keeps the length a multiple of 3.
+
+Q: Why is s = (01)^p a bad string for equal numbers of 0s and 1s?
+A: The cut x = ε, y = 01 is legal once p ≥ 2, and every pumped string still has equal counts, so this s proves nothing. Use s = 0^p 1^p instead: |xy| ≤ p puts y in the 0s, and pumping breaks the counts.
 
 Q: Show {a^(2^n) : n ≥ 0} is not regular.
 A: Take s = a^(2^p), which is long enough. y is t a's with 1 ≤ t ≤ p. i = 2 gives length 2^p + t. Since t ≤ p < 2^p, that length is strictly between 2^p and 2^(p+1), so it is not a power of two and the string leaves.
@@ -341,14 +368,14 @@ A: No. The 1 right after the leading 0s pins k to the number of leading 0s, and 
 Q: Why isn't 01(0 ∪ 1)∗0 a regular expression for {0^k 1 u 0^k : k ≥ 1}?
 A: It locks the leading block at one 0, which is only the k = 1 slice. 00100 is in the language with k = 2, and the expression cannot make it, because its second letter has to be 1.
 
-Q: What counts as three copies of one block over {a, b}?
-A: Pick one block w and glue it three times. w = a gives aaa. w = ab gives ababab. abab is only two copies, so it is out.
+Q: Show {0^n 1^m 0^n : m, n ≥ 0} is not regular.
+A: Take s = 0^p 1 0^p. Every legal y is 0s from the front block. Pump up (i = 2): the front block of 0s is now longer than the back block, and the language needs the two outer blocks to match, so it leaves.
 
-Q: Why does a string of only b's fail for three copies of one block?
-A: With p = 4, twelve b's is www with w = bbbb. Cutting one b and copying it makes 13 b's, which is not three equal blocks. Cutting three b's and copying them makes 15 b's, which is still www as five, five, five. They are allowed to pick the three-b cut, so this string cannot carry the proof.
+Q: Show {0^m 1^n : m ≠ n} is not regular.
+A: Use closure. If it were regular, its complement would be regular, and that complement intersected with 0∗1∗ is exactly {0^n 1^n}, which is not regular. The complement alone is not {0^n 1^n}: out-of-order strings like 10 are in neither language.
 
-Q: Why can a marked string work when all identical letters do not?
-A: 000011110000 is four 0s, four 1s, four 0s. Every legal cut sits in the front 0s and breaks the three matching blocks. All b's has no marker, so a cut whose length is a multiple of 3 can stay in.
+Q: Show that the strings that are not palindromes form a nonregular language.
+A: First show the palindromes are not regular: s = 0^p 1 0^p, y is front 0s, and deleting it (i = 0) leaves unequal outer blocks, not a palindrome. If the nonpalindromes were regular, their complement, the palindromes, would be regular too.
 
 Q: Where is the error in a proof that 0∗1∗ is not regular?
 A: The proof pumps 0^p 1^p and says it cannot be pumped. That failure is for the equal-count language {0^n 1^n}, not for 0∗1∗. In 0∗1∗ the counts need not match, and 000001111 is still in.
@@ -359,35 +386,20 @@ A: Intersect with exactly one a, then b's, then c's, which is regular. What surv
 Q: Why does the one-a language still pass the pumping rules? Use p = 2.
 A: Here you pick p and one cut per string. No a's: y is the first symbol. One a: y is the a, and deleting or adding a's turns the match rule off. Two a's: y is both a's, so the count never hits 1. Three or more: y is one a. Every pumped string stays in. p = 1 fails on aab: the only cut deletes an a and leaves ab.
 
-Q: Why is the complement of {0^m 1^n : m ≠ n} not {0^n 1^n}?
-A: Strings out of order, like 10, are in neither language. The repair: if the m ≠ n language were regular, its complement would be regular, and that complement intersected with 0∗1∗ is exactly {0^n 1^n}, which is not regular.
-
 Q: PDA for {0^n 1^n}, the class machine.
 A: q1 is start and accept, so ε is in. q1 to q2 on ε, ε → $. q2 loops on 0, ε → 0. q2 to q3 on 1, 0 → ε, and q3 loops on 1, 0 → ε. q3 to q4 on ε, $ → ε, and q4 is accept.
 
 Q: PDA for a^i b^j c^k with i = j or i = k.
 A: Push $, then push one marker per a. Guess a branch with an ε-arrow. Branch one: pop a marker per b, pop $, then read any c's and accept. Branch two: read the b's without touching the stack, then pop a marker per c, pop $, and accept.
 
-Q: PDA for palindromes.
-A: Push $, push the actual first-half symbols, guess the middle (ε if the length is even, eat one symbol if odd), pop only a match, then pop $ to accept. [[fig:pda-pal]]
+Q: PDA for a^i b^j c^k with i = j or j = k, the old exam language.
+A: Guess the branch at the very start with ε. Branch one: push $, push a marker per a, pop one per b, pop $, then read any c's and accept. Branch two: read the a's without the stack, push $, push a marker per b, pop one per c, pop $, and accept.
 
 Q: PDA for ww^R. How is it different from the palindrome machine?
 A: Same machine: push $, push the first half, guess the middle, pop only a match, pop $. The only change is the middle guess. Here it is only an ε-move and never eats a symbol, so odd-length strings are rejected.
 
-Q: PDA for at least three 1s. Does it use the stack?
-A: No. Count 1s in the state up to three. 0s stay put. The accept state stays on 0 or 1. Labels are 1, ε → ε. [[fig:pda-3]]
-
-Q: PDA for strings that start and end with the same symbol.
-A: Remember the first symbol in the state. Later, guess that a matching symbol is the last one and jump to an accept state with no arrows out. The stack is unused. The empty string is out. [[fig:pda-ends]]
-
-Q: PDA for odd length.
-A: Flip between even and odd on every symbol. Accept only the odd state. The stack is unused. [[fig:pda-odd]]
+Q: PDA for palindromes.
+A: Push $, push the actual first-half symbols, guess the middle (ε if the length is even, eat one symbol if odd), pop only a match, then pop $ to accept. [[fig:pda-pal]]
 
 Q: PDA for odd length whose middle symbol is 0.
 A: Push $, push one X per first-half symbol, read a 0 as the middle, pop one X per second-half symbol, then pop $ to accept. [[fig:pda-mid]]
-
-Q: PDA for the empty set. How is that different from a machine that accepts only ε?
-A: One start state, not accept, and no arrows. Nothing is accepted. An ε-arrow into an accept state would accept the empty string, which is a different language. [[fig:pda-empty]]
-
-Q: How do you draw a PDA that accepts only ε?
-A: Take an ε-arrow from the start into an accept state, and give real symbols no accepting run. That language is {ε}, not the empty set. The empty-set drawing has no accept state and no arrows.
