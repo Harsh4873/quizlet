@@ -1574,6 +1574,33 @@ textarea.review-input {
   padding: 1px 5px;
 }
 
+.import-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.import-target-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: 0;
+}
+
+.import-target-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+}
+
 .paste-form {
   display: grid;
   gap: 10px;
@@ -2436,6 +2463,17 @@ textarea.review-input {
   margin: 0 auto;
 }
 
+.deck-set-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+
+.deck-set-list .deck-row {
+  margin: 0;
+}
+
 .deck-row {
   display: flex;
   width: 100%;
@@ -2453,8 +2491,23 @@ textarea.review-input {
 }
 
 .deck-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   font-size: 20px;
   font-weight: 750;
+}
+
+.deck-row-private {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: var(--panel-2);
+  border-radius: 999px;
+  padding: 2px 8px;
 }
 
 .deck-row-meta {

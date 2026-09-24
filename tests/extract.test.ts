@@ -54,6 +54,14 @@ describe('term extraction', () => {
     expect(terms[0].source).toBe('qa');
   });
 
+  it('keeps a bracket tag at the start of a Q prompt', () => {
+    const md = 'Q: [MCMC] Define MCMC in one sentence?\nA: A sampler that walks a Markov chain toward the target posterior.\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(1);
+    expect(terms[0].term).toBe('[MCMC] Define MCMC in one sentence?');
+    expect(terms[0].source).toBe('qa');
+  });
+
   it('keeps a Q prompt that ends in a period instead of adding a question mark', () => {
     const md = 'Q: State the three pumping rules.\nA: |xy| is at most p, y is not empty, and every pumped string stays in.\n';
     const { terms } = extractStudyMaterial(md);

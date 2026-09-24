@@ -2,12 +2,15 @@ import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { ClipboardPaste, Download, FilePlus2, Search, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import type { AppData, StudyMaterial, StudySet } from '../model';
 import { masteryPercent } from '../lib/store';
+import { EXAM_SET_ID } from '../lib/sample';
+import { OWNER_BASIL_CS_STATS_ID, isOwnerSetId } from '../lib/owner-set';
 
 export interface ImportItem {
   title?: string;
   markdown?: string;
   json?: string;
   error?: string;
+  setId?: string;
 }
 
 interface LibraryProps {
@@ -18,15 +21,32 @@ interface LibraryProps {
   onDelete: (set: StudySet) => void;
   onExport: (set: StudySet) => void;
   onOpen: (set: StudySet) => void;
+  allowOwnerSets?: boolean;
+  onAddOwnerBasilSet?: () => void;
 }
 
-export function Library({ data, materialFor, onImport, onLoadSample, onDelete, onExport, onOpen }: LibraryProps) {
+export function Library({
+  data,
+  materialFor,
+  onImport,
+  onLoadSample,
+  onDelete,
+  onExport,
+  onOpen,
+  allowOwnerSets = false,
+  onAddOwnerBasilSet,
+}: LibraryProps) {
   const [pasteOpen, setPasteOpen] = useState(data.sets.length === 0);
   const [pasteTitle, setPasteTitle] = useState('');
   const [pasteBody, setPasteBody] = useState('');
+  const [importTarget, setImportTarget] = useState(EXAM_SET_ID);
   const [dragOver, setDragOver] = useState(false);
   const [filter, setFilter] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const targetId = allowOwnerSets && importTarget === OWNER_BASIL_CS_STATS_ID
+    ? OWNER_BASIL_CS_STATS_ID
+    : EXAM_SET_ID;
+  const hasOwnerBasilSet = data.sets.some((set) => set.id === OWNER_BASIL_CS_STATS_ID);
 
   const visible = useMemo(() => {
     const fold = (text: string) =>
@@ -49,7 +69,7 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
 
   const submitPaste = () => {
     if (!pasteBody.trim()) return;
-    onImport([{ title: pasteTitle.trim() || undefined, markdown: pasteBody }]);
+    onImport([{ title: pasteTitle.trim() || undefined, markdown: pasteBody, setId: targetId }]);
     setPasteTitle('');
     setPasteBody('');
   };
@@ -60,8 +80,8 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
       const name = file.name.replace(/\.(md|markdown|txt|json)$/i, '');
       try {
         const text = await file.text();
-        if (/\.json$/i.test(file.name)) items.push({ title: name, json: text });
-        else items.push({ title: name, markdown: text });
+        if (/\.json$/i.test(file.name)) items.push({ title: name, json: text, setId: targetId });
+        else items.push({ title: name, markdown: text, setId: targetId });
       } catch {
         items.push({ error: `Could not read ${file.name}` });
       }
@@ -106,6 +126,19 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
           <button type="button" className="btn btn-ghost" onClick={onLoadSample}>
             <Sparkles size={16} aria-hidden /> Open Exam 1
           </button>
+          {allowOwnerSets && !hasOwnerBasilSet && onAddOwnerBasilSet && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                onAddOwnerBasilSet();
+                setImportTarget(OWNER_BASIL_CS_STATS_ID);
+                setPasteOpen(true);
+              }}
+            >
+              <FilePlus2 size={16} aria-hidden /> Add Basil CS/stats
+            </button>
+          )}
           <input
             ref={fileInput}
             type="file"
@@ -118,7 +151,34 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
             }}
           />
         </div>
-        <p className="drop-hint">…or drop a <code>.md</code> or export <code>.json</code> to replace Exam 1.</p>
+        {allowOwnerSets && (
+          <fieldset className="import-target">
+            <legend className="import-target-label">Import into</legend>
+            <label className="import-target-option">
+              <input
+                type="radio"
+                name="import-target"
+                checked={targetId === EXAM_SET_ID}
+                onChange={() => setImportTarget(EXAM_SET_ID)}
+              />
+              Exam 1
+            </label>
+            <label className="import-target-option">
+              <input
+                type="radio"
+                name="import-target"
+                checked={targetId === OWNER_BASIL_CS_STATS_ID}
+                onChange={() => setImportTarget(OWNER_BASIL_CS_STATS_ID)}
+              />
+              Basil CS/stats (private)
+            </label>
+          </fieldset>
+        )}
+        <p className="drop-hint">
+          {targetId === OWNER_BASIL_CS_STATS_ID
+            ? <>…or drop a <code>.md</code> or export <code>.json</code> into the private Basil set.</>
+            : <>…or drop a <code>.md</code> or export <code>.json</code> to replace Exam 1.</>}
+        </p>
 
         {pasteOpen && (
           <div className="paste-form fade-in">
@@ -137,7 +197,7 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
             />
             <div className="paste-form-actions">
               <button type="button" className="btn btn-primary" disabled={!pasteBody.trim()} onClick={submitPaste}>
-                <FilePlus2 size={16} aria-hidden /> Replace Exam 1
+                <FilePlus2 size={16} aria-hidden /> {targetId === OWNER_BASIL_CS_STATS_ID ? 'Save Basil CS/stats' : 'Replace Exam 1'}
               </button>
             </div>
           </div>
@@ -188,6 +248,7 @@ export function Library({ data, materialFor, onImport, onLoadSample, onDelete, o
                   <button type="button" className="set-card-main" onClick={() => onOpen(set)}>
                     <div className="set-card-title">{set.title}</div>
                     <div className="set-card-meta">
+                      {isOwnerSetId(set.id) && <span className="meta-chip">Private</span>}
                       <span className="meta-chip">{material.stats.terms} terms</span>
                       <span className="meta-chip">{material.stats.clozes} blanks</span>
                       <span className="meta-chip">{material.stats.readingMinutes} min</span>

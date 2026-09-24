@@ -26,7 +26,13 @@ import {
 } from './lib/store';
 import { recordBestMatch } from './lib/sync-core';
 import { EXAM_SET_ID, EXAM_SET_TITLE } from './lib/sample';
-import { ensureQuizletLibrary } from './lib/quizlet-library';
+import { clearSetTombstone, ensureQuizletLibrary } from './lib/quizlet-library';
+import {
+  OWNER_BASIL_CS_STATS_ID,
+  OWNER_BASIL_CS_STATS_TITLE,
+  createOwnerBasilCsStatsSet,
+  isOwnerSetId,
+} from './lib/owner-set';
 import { Library, type ImportItem } from './components/Library';
 import { CardsHome } from './components/CardsHome';
 import { SetShell } from './components/SetShell';
@@ -87,8 +93,8 @@ function openCards() {
   navigate('/cards');
 }
 
-function openExamCards(index = 0, deck?: DeckFilter) {
-  navigate(`/set/${EXAM_SET_ID}/cards/${index}${deck ? `/${deck}` : ''}`);
+function openSetCards(setId: string, index = 0, deck?: DeckFilter) {
+  navigate(`/set/${setId}/cards/${index}${deck ? `/${deck}` : ''}`);
 }
 
 export default function App() {
@@ -203,7 +209,8 @@ export default function App() {
   const importItems = (items: ImportItem[]) => {
     const errors: string[] = [];
     let next = data;
-    let imported = false;
+    let importedId: string | null = null;
+    let importedTitle = EXAM_SET_TITLE;
     for (const item of items) {
       if (item.error) {
         errors.push(item.error);
@@ -223,31 +230,43 @@ export default function App() {
         }
         markdown = normalizeHtmlInMarkdown(markdown);
         const docTitle = parseMarkdown(markdown).title;
+        const targetId = item.setId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_ID : EXAM_SET_ID;
+        const fallbackTitle = targetId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_TITLE : EXAM_SET_TITLE;
         const stamp = nextDataTimestamp(next);
-        const existing = next.sets.find((set) => set.id === EXAM_SET_ID);
+        const existing = next.sets.find((set) => set.id === targetId);
         const set: StudySet = {
-          id: EXAM_SET_ID,
-          title: (title || docTitle || EXAM_SET_TITLE).trim() || EXAM_SET_TITLE,
+          id: targetId,
+          title: (title || docTitle || fallbackTitle).trim() || fallbackTitle,
           markdown,
           createdAt: existing?.createdAt ?? stamp,
           updatedAt: stamp,
         };
-        next = upsertSet(next, set);
-        if (next.tombstones[EXAM_SET_ID]) {
-          const { [EXAM_SET_ID]: _removed, ...tombstones } = next.tombstones;
-          next = { ...next, tombstones };
-        }
-        imported = true;
+        next = clearSetTombstone(upsertSet(next, set), targetId);
+        importedId = targetId;
+        importedTitle = set.title;
       } catch {
         errors.push(item.title ? `“${item.title}” is not a valid export.` : 'That JSON is not a valid export.');
       }
     }
     setData(ensureQuizletLibrary(next));
     if (errors.length > 0) setNotice(errors[0]);
-      else if (imported) {
-      setNotice('Updated Exam 1.');
-      openCards();
+    else if (importedId) {
+      setNotice(importedId === EXAM_SET_ID ? 'Updated Exam 1.' : `Updated ${importedTitle}.`);
+      if (importedId === EXAM_SET_ID) openCards();
+      else openSetCards(importedId);
     }
+  };
+
+  const addOwnerBasilSet = () => {
+    const existing = data.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
+    if (existing) {
+      openSetCards(OWNER_BASIL_CS_STATS_ID);
+      return;
+    }
+    const stamp = nextDataTimestamp(data);
+    const next = clearSetTombstone(upsertSet(data, createOwnerBasilCsStatsSet(stamp)), OWNER_BASIL_CS_STATS_ID);
+    setData(ensureQuizletLibrary(next));
+    setNotice('Private Basil set added. Paste markdown to fill it.');
   };
 
   const removeSet = (set: StudySet) => {
@@ -261,7 +280,7 @@ export default function App() {
     }
     if (!window.confirm(`Remove “${set.title}” and its progress? This also removes it from synced devices.`)) return;
     setData((d) => ensureQuizletLibrary(deleteSet(d, set.id, nextDataTimestamp(d))));
-    openExamCards();
+    openCards();
   };
 
   const exportSet = (set: StudySet) => {
@@ -320,9 +339,19 @@ export default function App() {
     setData((d) => ({ ...d, theme: order[(order.indexOf(d.theme) + 1) % order.length] }));
   };
 
-  const flashcardSets = data.sets.filter((set) => !isPaperSet(set.id));
+  const flashcardSets = data.sets
+    .filter((set) => !isPaperSet(set.id))
+    .sort((a, b) => {
+      if (a.id === EXAM_SET_ID) return -1;
+      if (b.id === EXAM_SET_ID) return 1;
+      return a.title.localeCompare(b.title);
+    });
   const activeSet = route.view === 'set' ? data.sets.find((s) => s.id === route.setId) : undefined;
   const examSet = data.sets.find((s) => s.id === EXAM_SET_ID);
+  const allowOwnerSets =
+    syncStatus.state === 'synced'
+    || syncStatus.state === 'syncing'
+    || data.sets.some((set) => isOwnerSetId(set.id));
 
   useEffect(() => {
     if (route.view === 'set' && !activeSet) openCards();
@@ -403,24 +432,25 @@ export default function App() {
             onDelete={() => removeSet(activeSet)}
             onExport={() => exportSet(activeSet)}
           />
-        ) : route.view === 'cards' && examSet ? (
+        ) : route.view === 'cards' && flashcardSets.length > 0 ? (
           <CardsHome
-            set={examSet}
-            material={materialFor(examSet)}
-            onStudy={openExamCards}
+            sets={flashcardSets.map((set) => ({ set, material: materialFor(set) }))}
+            onStudy={openSetCards}
           />
         ) : (
           <Library
             data={{ ...data, sets: flashcardSets }}
             materialFor={materialFor}
+            allowOwnerSets={allowOwnerSets}
             onImport={importItems}
+            onAddOwnerBasilSet={addOwnerBasilSet}
             onLoadSample={() => {
               if (!examSet) return;
-              navigate(`/set/${EXAM_SET_ID}/cards`);
+              openSetCards(EXAM_SET_ID);
             }}
             onDelete={removeSet}
             onExport={exportSet}
-            onOpen={(set) => navigate(`/set/${set.id}/cards`)}
+            onOpen={(set) => openSetCards(set.id)}
           />
         )}
       </main>
