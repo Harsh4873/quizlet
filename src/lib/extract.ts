@@ -295,6 +295,13 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
         defUnitTexts.add(unit.text);
         continue;
       }
+      // Same merge, but the prompt has extra text after ? / . / ! (for example an ASR hint).
+      const trailing = q[1].match(/^(.*?)\s+(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i);
+      if (trailing && trailing[2].trim().length >= 4) {
+        addTerm(ensureQuestionMark(trailing[1]), trailing[2].trim(), unit.section, 'qa');
+        defUnitTexts.add(unit.text);
+        continue;
+      }
       const next = units[i + 1];
       const a = next?.text.match(ANSWER_RE);
       if (a) {
@@ -426,7 +433,8 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
 
 function ensureQuestionMark(q: string): string {
   const t = q.trim();
-  return /[?？.!]$/.test(t) ? t : `${t}?`;
+  if (/[?？.!]$/.test(t) || /[?？]/.test(t)) return t;
+  return `${t}?`;
 }
 
 function countWords(blocks: Block[]): number {

@@ -77,6 +77,15 @@ describe('term extraction', () => {
     expect(terms[0].definition).toBe('Retrieval strengthens the trace.');
   });
 
+  it('keeps a parenthetical after ? when Q and A merge into one paragraph', () => {
+    const md = 'Q: [MCMC] What is MCMC? (ASR: Montclair)\nA: A sampler that walks a Markov chain toward the target posterior.\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(1);
+    expect(terms[0].term).toBe('[MCMC] What is MCMC? (ASR: Montclair)');
+    expect(terms[0].definition).toBe('A sampler that walks a Markov chain toward the target posterior.');
+    expect(terms[0].source).toBe('qa');
+  });
+
   it('dedupes repeated terms, keeping the longest definition', () => {
     const md = '- **ATP**: energy\n- **ATP**: the energy currency of the cell\n';
     const { terms } = extractStudyMaterial(md);
