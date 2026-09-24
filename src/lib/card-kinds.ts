@@ -1,5 +1,6 @@
 import type { TermCard } from '../model';
 import { priorityRank } from './priority';
+import { tupleRank } from './tuples';
 
 /** The four `##` sections of the Exam 1 deck. */
 export type CardKind = 'term' | 'rule' | 'theorem' | 'example';
@@ -7,7 +8,7 @@ export type CardKind = 'term' | 'rule' | 'theorem' | 'example';
 /** Gym cards are said out loud and flipped; desk cards need paper. */
 export type StudyPlace = 'gym' | 'desk';
 
-export type DeckFilter = 'priority' | 'all' | 'gym' | CardKind;
+export type DeckFilter = 'priority' | 'tuples' | 'all' | 'gym' | CardKind;
 
 export interface KindInfo {
   kind: CardKind;
@@ -39,6 +40,11 @@ export const DECK_INFO: Record<DeckFilter, DeckInfo> = {
     label: 'Priority',
     hint: 'Short on time? Start here: definitions, then things to know, then examples.',
     short: 'Short on time? Start here: definitions, things to know, examples.',
+  },
+  tuples: {
+    label: '5-tuples',
+    hint: 'Each construction twice: what it is, then its tuple one part per line.',
+    short: 'Each construction, then its tuple one part per line. PDA 6-tuple too.',
   },
   gym: {
     label: 'Gym',
@@ -78,7 +84,7 @@ export const DECK_INFO: Record<DeckFilter, DeckInfo> = {
 };
 
 /** Chip order: the short list first, then the gym mix, the whole deck last. */
-export const DECK_FILTERS: readonly DeckFilter[] = ['priority', 'gym', 'term', 'rule', 'theorem', 'example', 'all'];
+export const DECK_FILTERS: readonly DeckFilter[] = ['priority', 'tuples', 'gym', 'term', 'rule', 'theorem', 'example', 'all'];
 
 export function kindOf(card: Pick<TermCard, 'section'>): KindInfo | undefined {
   const key = card.section.trim().toLowerCase();
@@ -88,6 +94,7 @@ export function kindOf(card: Pick<TermCard, 'section'>): KindInfo | undefined {
 export function inDeck(card: Pick<TermCard, 'section'> & { term?: string }, filter: DeckFilter): boolean {
   if (filter === 'all') return true;
   if (filter === 'priority') return card.term !== undefined && priorityRank(card.term) !== undefined;
+  if (filter === 'tuples') return card.term !== undefined && tupleRank(card.term) !== undefined;
   const info = kindOf(card);
   if (!info) return false;
   return filter === 'gym' ? info.place === 'gym' : info.kind === filter;

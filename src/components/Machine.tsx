@@ -8,6 +8,7 @@ import {
   PumpSplitFigure,
   QPrimeTableFigure,
   SubsetVennFigure,
+  TUPLE_SHEETS,
 } from './Diagrams';
 
 export interface MachineNode {
@@ -870,6 +871,7 @@ const FIGURES: Record<string, ReactNode> = {
     />
   ),
   'q-prime-table': <QPrimeTableFigure />,
+  ...TUPLE_SHEETS,
   'pda-label': <PdaLabelFigure />,
   'perfect-shuffle': <PerfectShuffleFigure />,
   'pump-split': <PumpSplitFigure />,

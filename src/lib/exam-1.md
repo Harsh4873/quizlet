@@ -133,9 +133,6 @@ A: Only when you are showing a language is not regular: assume it, then pump or 
 Q: If L sits inside a regular language, must L be regular?
 A: No. {0^n 1^n} sits inside Σ∗, which is regular, and it is not regular. A false claim dies with one concrete counterexample. [[fig:subset-venn]]
 
-Q: Does closure under union cover infinitely many unions?
-A: No, only finitely many. {0^n 1^n} is the union of the single strings ε, 01, 0011, and so on. Each one is finite, so regular, but the infinite union is not regular.
-
 Q: When does a DFA accept ε?
 A: Only if the start state is an accept state. No symbol has been read yet, so the machine is still at the start.
 
@@ -167,10 +164,7 @@ Q: How do you make an NFA with exactly one accept state?
 A: Add one new accept state. Draw an ε-arrow from every old accept state to it, and make the old accept states non-accepting. Every accepting path now ends in the one new state.
 
 Q: What is the trick for writing any 5-tuple?
-A: Q′ is just what the new machine has to remember. Once you know that, the other four lines follow: Σ stays the same, δ′ moves each piece when a letter is read, q0′ is where everything starts, and F′ says when to accept.
-
-Q: In each construction, what does Q′ remember?
-A: Product, A − B: a pair, where A’s machine is and where B’s machine is. Perfect shuffle: that pair, plus whose turn it is. DROP: where the old machine is, plus whether the free move is used. Subset (NFA to DFA): the set of places the NFA could be. [[fig:q-prime-table]]
+A: Q′ is just what the new machine has to remember: a pair for a product, the pair plus whose turn for perfect shuffle, the old state plus whether the free move is used for DROP, and a set of states for NFA to DFA. Then Σ stays the same, δ′ moves each piece, q0′ is where everything starts, and F′ says when to accept. [[fig:q-prime-table]]
 
 Q: In the perfect shuffle machine, what does the extra third part of each state remember?
 A: Whose turn it is. After A’s machine reads a symbol it becomes B’s turn, and after B’s it goes back. Accept only on A’s turn, so both machines have read the same number of symbols. [[fig:shuffle-turn]]
@@ -235,7 +229,7 @@ Q: How do you prove the regular pumping lemma at class level?
 A: Take a DFA and set p to its number of states. On a string of length at least p, the first p+1 states in the run cannot all be different, so some state repeats. x is the part before that repeat, y is the loop, z is the rest. Say why |y| > 0, why |xy| ≤ p, and why repeating the loop stays in the language. A state diagram is enough. Explain the repeat. Do not only say "pigeonhole." [[fig:pump-loop]]
 
 Q: What does the NFA-to-DFA theorem say, and how is the DFA built?
-A: Every NFA has a DFA for the same language. Each DFA state is the set of NFA states you could be in, with ε-arrows followed. The start is the start state plus its ε-reach. On a symbol, move every state in the set, then follow ε-arrows. A set accepts if it holds an NFA accept state. k NFA states give at most 2^k sets.
+A: Every NFA has a DFA for the same language. Each DFA state is the set of NFA states you could be in, with ε-arrows followed. The start is the start state plus its ε-reach. On a symbol, move every state in the set, then follow ε-arrows. A set accepts if it holds an NFA accept state. k NFA states give at most 2^k sets. [[fig:subset-ends1]]
 
 Q: Are deterministic and nondeterministic machines equally powerful?
 A: For finite automata, yes: every NFA has a DFA for the same language, with up to 2^k states. For pushdown automata, no: nondeterministic PDAs recognize more, and a machine like the palindrome one guesses the middle. Deterministic PDAs are not on Exam 1.
@@ -256,7 +250,7 @@ Q: Are regular languages closed under complement?
 A: Yes, by swapping accept states on a complete DFA. You may use it when you classify. She will not make an untaught closure the intended easy path.
 
 Q: Why is the perfect shuffle of two regular languages regular?
-A: Run DFAs for A and B together with a turn bit. A state is (p, q, turn). On A's turn only p moves, and the turn passes to B. On B's turn only q moves, and the turn passes back. Start at both start states on A's turn. Accept when p and q both accept and it is A's turn again, so both read the same number of symbols.
+A: Run DFAs for A and B together with a turn bit. A state is (p, q, turn). On A's turn only p moves, and the turn passes to B. On B's turn only q moves, and the turn passes back. Start at both start states on A's turn. Accept when p and q both accept and it is A's turn again, so both read the same number of symbols. [[fig:shuffle-turn]]
 
 Q: Why is the shuffle of two regular languages regular?
 A: Use a product NFA with states (p, q) and no turn bit. On each symbol, guess which machine reads it: move p or move q. Start at both start states. Accept when both parts accept. Nondeterminism does the choosing.
@@ -321,7 +315,28 @@ Q: Draw a DFA whose only string is ε.
 A: The start state is accept. Any real symbol leaves into a rejecting sink and stays there. [[fig:dfa-eps]]
 
 Q: Write the 5-tuple of the DFA that simulates an NFA (Q, Σ, δ, q0, F).
-A: Q′ = P(Q): every set of NFA states. Σ: same alphabet. q0′ = E({q0}): the start plus its free ε-moves. δ′(R, a) = {q : q ∈ E(δ(r, a)) for some r ∈ R}: move every state in R on a, then add free moves. F′ = {R ∈ Q′ : R ∩ F ≠ ∅}: any set holding an accept state. E(S) is S plus everything reachable by ε-arrows. [[fig:subset-ends1]]
+A: Q′ = P(Q): every set of NFA states. Σ: same alphabet. q0′ = E({q0}): the start plus its free ε-moves. δ′(R, a) = {q : q ∈ E(δ(r, a)) for some r ∈ R}: move every state in R on a, then add free moves. F′ = {R ∈ Q′ : R ∩ F ≠ ∅}: any set holding an accept state. E(S) is S plus everything reachable by ε-arrows. [[fig:tuple-subset]]
+
+Q: Write the 5-tuple of the even-number-of-1s DFA, part by part.
+A: Q = {q0, q1}, Σ = {0, 1}, δ(q0, 0) = q0, δ(q0, 1) = q1, δ(q1, 0) = q1, δ(q1, 1) = q0, the start is q0, and F = {q0}. 0 keeps the count, 1 flips it. [[fig:tuple-dfa]]
+
+Q: Write the 5-tuple of the product DFA for union, intersection, and A − B.
+A: Q = Q1 × Q2, same Σ, δ((r1, r2), a) = (δ1(r1, a), δ2(r2, a)), start (q1, q2). Only F changes: union accepts when either part accepts, intersection when both do, and A − B when the first accepts and the second does not. [[fig:tuple-product]]
+
+Q: Write the 5-tuple of the union NFA.
+A: Q = {q0} ∪ Q1 ∪ Q2 with a new start q0, same Σ, δ(q0, ε) = {q1, q2}, and δ1 or δ2 everywhere else. F = F1 ∪ F2. [[fig:tuple-union]]
+
+Q: Write the 5-tuple of the concatenation NFA.
+A: Q = Q1 ∪ Q2, same Σ, start q1, F = F2. Each accept state of N1 gets one extra ε-move into q2: δ(q, ε) = δ1(q, ε) ∪ {q2} for q in F1. Everything else follows δ1 or δ2. [[fig:tuple-concat]]
+
+Q: Write the 5-tuple of the star NFA.
+A: Q = {q0} ∪ Q1 with a new start q0, same Σ, δ(q0, ε) = {q1}, and δ(q, ε) = δ1(q, ε) ∪ {q1} for every q in F1. F = {q0} ∪ F1, so ε is in. [[fig:tuple-star]]
+
+Q: Write the 5-tuple of the DROP NFA.
+A: Q′ = Q × {1, 2}, same Σ, start (q0, 1), F′ = F × {2}. Read normally in either copy: δ′((q, i), a) = {(δ(q, a), i)}. One free move drops a letter: δ′((q, 1), ε) = {(δ(q, b), 2) : b ∈ Σ}. [[fig:tuple-drop]]
+
+Q: Write the 6-tuple of the {0^n 1^n} PDA, part by part.
+A: Q = {q1, q2, q3, q4}, Σ = {0, 1}, Γ = {0, $}, start q1, F = {q1, q4}. δ(q1, ε, ε) = {(q2, $)}, δ(q2, 0, ε) = {(q2, 0)}, δ(q2, 1, 0) = {(q3, ε)}, δ(q3, 1, 0) = {(q3, ε)}, δ(q3, ε, $) = {(q4, ε)}, and every other entry is ∅. [[fig:tuple-pda]]
 
 Q: Regex for at least three 1s.
 A: 0∗10∗10∗1(0 ∪ 1)∗. A regular expression is a legal way to prove a language is regular. She will not require one, and she will not ask for a grammar.
@@ -345,7 +360,7 @@ Q: Prove A − B is regular when A and B are, using DFAs only.
 A: Run the product of the two DFAs: states are pairs, and each symbol moves both parts. Accept a pair when the first part accepts and the second part does not. That is the intersection idea and the complement idea in one machine. [[fig:diff-grid]]
 
 Q: Write the 5-tuple for the perfect shuffle DFA.
-A: Q′ remembers where each machine is, plus whose turn it is. From DFAs (QA, Σ, δA, sA, FA) and (QB, Σ, δB, sB, FB): states QA × QB × {A, B}, start (sA, sB, A), accept FA × FB × {A}. δ((p, q, A), c) = (δA(p, c), q, B). δ((p, q, B), c) = (p, δB(q, c), A). ε is in exactly when both start states accept. [[fig:shuffle-turn]]
+A: Q′ remembers where each machine is, plus whose turn it is. From DFAs (QA, Σ, δA, sA, FA) and (QB, Σ, δB, sB, FB): states QA × QB × {A, B}, start (sA, sB, A), accept FA × FB × {A}. δ((p, q, A), c) = (δA(p, c), q, B). δ((p, q, B), c) = (p, δB(q, c), A). ε is in exactly when both start states accept. [[fig:tuple-shuffle]]
 
 Q: Show the reverse of a regular language is regular.
 A: Take an NFA or DFA for A and reverse every arrow. Add a new start state with ε-arrows to every old accept state. The old start becomes the only accept state. An accepting path for w in the old machine, walked backward, is an accepting path for the reverse of w in the new one.
@@ -355,9 +370,6 @@ A: Make two copies of A's DFA. Copy 1 means nothing has been dropped yet, copy 2
 
 Q: For regular L and a fixed symbol a, show L/a = {w : wa ∈ L} is regular. What about L/B?
 A: Keep L's DFA and change only the accept states. For L/a, a state q accepts when reading a from q lands in an old accept state. For L/B = {w : wy ∈ L for some y in B}, a state accepts when some string of B leads from it to an old accept state. B does not even have to be regular. [[fig:quotient-ab]]
-
-Q: How do you change a DFA for NOPREFIX(A) and NOEXTEND(A)?
-A: NOPREFIX keeps strings of A with no proper prefix in A: send every arrow leaving an accept state to a dead state, so the run cannot pass an accept state early. NOEXTEND keeps strings of A that are not a proper prefix of another string in A: an accept state stays accepting only if no nonempty string leads from it to an accept state.
 
 Q: Classify {0^n 1^n} and prove both halves.
 A: Context-free, not regular. Not regular: take s = 0^p 1^p. |xy| ≤ p puts y in the 0s, and i = 2 gives more 0s than 1s. Context-free: a PDA pushes $, pushes a 0 for each 0, pops one for each 1, then pops $ and accepts. [[fig:pda-0n1n]]

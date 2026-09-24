@@ -12,6 +12,7 @@ import {
   saveDeck,
 } from '../lib/card-kinds';
 import { priorityGroup, priorityRank } from '../lib/priority';
+import { tupleLabel, tupleRank } from '../lib/tuples';
 import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
@@ -67,10 +68,8 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
       if (filter === 'starred') return progress.cards[card.id]?.starred === true;
       return true;
     });
-    const ordered =
-      deckFilter === 'priority'
-        ? [...source].sort((a, b) => (priorityRank(a.term) ?? 0) - (priorityRank(b.term) ?? 0))
-        : source;
+    const rank = deckFilter === 'priority' ? priorityRank : deckFilter === 'tuples' ? tupleRank : undefined;
+    const ordered = rank ? [...source].sort((a, b) => (rank(a.term) ?? 0) - (rank(b.term) ?? 0)) : source;
     return seed === 0 ? ordered : shuffle(ordered, mulberry32(seed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [material, filter, deckFilter, seed, roundKey]);
@@ -214,9 +213,14 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   const starred = card ? progress.cards[card.id]?.starred === true : false;
   const info = card ? kindOf(card) : undefined;
-  const group = card && deckFilter === 'priority' ? priorityGroup(card.term) : undefined;
+  const curatedLabel =
+    card && deckFilter === 'priority'
+      ? priorityGroup(card.term)?.label
+      : card && deckFilter === 'tuples'
+        ? tupleLabel(card.term)
+        : undefined;
   const questionCard = card?.source === 'section';
-  const promptLabel = group ? group.label : info ? info.label : questionCard ? 'Question' : 'Term';
+  const promptLabel = curatedLabel ?? (info ? info.label : questionCard ? 'Question' : 'Term');
   const answerLabel = info || questionCard ? 'Answer' : 'Definition';
   const frontLabel = termFirst ? promptLabel : answerLabel;
   const backLabel = termFirst ? answerLabel : promptLabel;

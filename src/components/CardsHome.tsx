@@ -9,7 +9,7 @@ interface CardsHomeProps {
   onStudy: (index: number, deck: DeckFilter) => void;
 }
 
-const HOME_DECKS: readonly DeckFilter[] = ['priority', 'gym', 'term', 'rule', 'theorem', 'example'];
+const HOME_DECKS: readonly DeckFilter[] = ['priority', 'tuples', 'gym', 'term', 'rule', 'theorem', 'example'];
 
 export function CardsHome({ set, material, onStudy }: CardsHomeProps) {
   const [query, setQuery] = useState('');
@@ -42,7 +42,7 @@ export function CardsHome({ set, material, onStudy }: CardsHomeProps) {
                 <button
                   key={deck}
                   type="button"
-                  className={`kind-row ${deck === 'priority' || deck === 'gym' ? 'kind-row-wide' : ''} ${deck === 'priority' ? 'kind-row-priority' : ''}`}
+                  className={`kind-row ${deck === 'priority' || deck === 'tuples' || deck === 'gym' ? 'kind-row-wide' : ''} ${deck === 'priority' || deck === 'tuples' ? 'kind-row-priority' : ''}`}
                   onClick={() => onStudy(0, deck)}
                 >
                   <span className="kind-row-top">

@@ -2534,6 +2534,13 @@ textarea.review-input {
   max-height: 300px;
 }
 
+/* A tuple sheet is read line by line, so it keeps its width instead of shrinking to fit the height. */
+.card-figure .tuple-sheet {
+  max-height: none;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
 .face-text-with-figure {
   flex: 0 0 auto;
   width: 100%;

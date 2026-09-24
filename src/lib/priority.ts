@@ -39,7 +39,6 @@ export const PRIORITY_GROUPS: readonly PriorityGroup[] = [
       'How do you build an NFA for the star of an NFA?',
       'How do you prove a string is accepted, using the definition of computation?',
       'What is the trick for writing any 5-tuple?',
-      'In each construction, what does Q′ remember?',
       'In the perfect shuffle machine, what does the extra third part of each state remember?',
     ],
   },
