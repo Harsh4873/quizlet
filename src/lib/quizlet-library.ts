@@ -8,7 +8,7 @@ import {
 } from './owner-set';
 import { PAPER_PREFIX } from './paper-set';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from './sample';
-import { deleteSet, nextDataTimestamp, upsertSet } from './store';
+import { defaultData, deleteSet, nextDataTimestamp, upsertSet } from './store';
 
 function isPaperSetId(setId: string): boolean {
   return setId.startsWith(PAPER_PREFIX);
@@ -17,6 +17,17 @@ function isPaperSetId(setId: string): boolean {
 /** Exam 1 (public bundle), Research papers, and private owner-vault decks. */
 export function isKeptQuizletSetId(setId: string): boolean {
   return setId === EXAM_SET_ID || isPaperSetId(setId) || isOwnerSetId(setId);
+}
+
+/** Signed-out open: theme only. Decks arrive from the owner vault after Sync. */
+export function libraryOnOpen(accountId: string | null, saved: AppData): AppData {
+  if (accountId) return saved;
+  return { ...defaultData(), theme: saved.theme };
+}
+
+/** A Google account outside the owner vault sees no cards. */
+export function libraryAfterRejectedAccount(data: AppData): AppData {
+  return { ...defaultData(), theme: data.theme };
 }
 
 export function clearSetTombstone(data: AppData, setId: string): AppData {

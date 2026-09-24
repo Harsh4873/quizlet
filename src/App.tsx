@@ -10,6 +10,7 @@ import {
   deleteSet,
   exportSetJson,
   getProgress,
+  defaultData,
   loadAccountData,
   loadData,
   loadOrAdoptOwnerVaultData,
@@ -26,7 +27,12 @@ import {
 } from './lib/store';
 import { recordBestMatch } from './lib/sync-core';
 import { EXAM_SET_ID, EXAM_SET_TITLE } from './lib/sample';
-import { clearSetTombstone, ensureQuizletLibrary } from './lib/quizlet-library';
+import {
+  clearSetTombstone,
+  ensureQuizletLibrary,
+  libraryAfterRejectedAccount,
+  libraryOnOpen,
+} from './lib/quizlet-library';
 import {
   OWNER_BASIL_CS_STATS_ID,
   OWNER_BASIL_CS_STATS_TITLE,
@@ -97,7 +103,10 @@ function openSetCards(setId: string, index = 0) {
 
 export default function App() {
   const activeAccountRef = useRef<string | null>(readActiveAccountId());
-  const [data, setData] = useState<AppData>(() => ensureQuizletLibrary(
+  const ownerReadyRef = useRef(false);
+  const [ownerReady, setOwnerReady] = useState(false);
+  const [data, setData] = useState<AppData>(() => libraryOnOpen(
+    activeAccountRef.current,
     activeAccountRef.current ? loadAccountData(activeAccountRef.current) : loadData(),
   ));
   const dataRef = useRef(data);
@@ -113,7 +122,15 @@ export default function App() {
       onStatus: setSyncStatus,
       onAccount: (vaultId, legacyUid) => {
         const previousUid = activeAccountRef.current;
-        if (previousUid === vaultId) return dataRef.current;
+        ownerReadyRef.current = true;
+        setOwnerReady(true);
+
+        if (previousUid === vaultId) {
+          const next = ensureQuizletLibrary(dataRef.current);
+          dataRef.current = next;
+          setData(next);
+          return next;
+        }
 
         if (previousUid) {
           saveAccountData(previousUid, dataRef.current);
@@ -154,9 +171,12 @@ export default function App() {
   };
 
   const disableSync = async () => {
+    ownerReadyRef.current = false;
+    setOwnerReady(false);
     setSyncFlag(false);
     setSyncStatus({ state: 'off' });
     await cloudRef.current?.signOut();
+    setData((current) => libraryAfterRejectedAccount(current));
   };
 
   useEffect(() => {
@@ -166,6 +186,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (syncStatus.wrongAccount) {
+      ownerReadyRef.current = false;
+      setOwnerReady(false);
+      setData((current) => {
+        const cleared = libraryAfterRejectedAccount(current);
+        return cleared.sets.length === current.sets.length && current.sets.length === 0 ? current : cleared;
+      });
+    }
+  }, [syncStatus.wrongAccount]);
+
+  useEffect(() => {
+    if (!ownerReadyRef.current) {
+      if (!activeAccountRef.current) saveData({ ...defaultData(), theme: data.theme });
+      return;
+    }
     const uid = activeAccountRef.current;
     const curated = ensureQuizletLibrary(data);
     if (curated !== data) {
@@ -205,6 +240,10 @@ export default function App() {
   };
 
   const importItems = (items: ImportItem[]) => {
+    if (!ownerReadyRef.current) {
+      setNotice('Sign in with Sync before adding cards.');
+      return;
+    }
     const errors: string[] = [];
     let next = data;
     let importedId: string | null = null;
@@ -439,6 +478,7 @@ export default function App() {
             data={{ ...data, sets: flashcardSets }}
             materialFor={materialFor}
             allowOwnerSets={allowOwnerSets}
+            canImport={ownerReady}
             onImport={importItems}
             onAddOwnerBasilSet={addOwnerBasilSet}
             onLoadSample={() => {

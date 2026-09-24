@@ -8,7 +8,8 @@ Flashcard extraction and study modes were transported from Research (Recall). Pa
 
 Shared collection: `recall_users/{vaultId}/sets` (same ruleset as Research).
 
-- Ensure set id `exam-1-627` exists with the bundled Exam 1 markdown when missing.
-- Ensure `owner-basil-cs-stats` (`Basil CS/stats, Ioerger Sep 2026`) exists from `src/lib/basil-cs-stats.md` when missing or empty. A deleted copy stays deleted. Other `owner-*` markdown is not overwritten.
+- Signed-out sessions and rejected Google accounts keep an empty set list. Exam 1 and Basil are written into the library only after owner-vault membership resolves, then they sync to `recall_users/{vaultId}/sets`.
+- Ensure set id `exam-1-627` exists with the bundled Exam 1 markdown when the owner library is missing it.
+- Ensure `owner-basil-cs-stats` (Basil CS/stats, Ioerger Sep 2026) exists from `src/lib/basil-cs-stats.md` when that owner library is missing it or the set is empty. A deleted copy stays deleted. Other `owner-*` markdown is not overwritten.
 - Never tombstone `paper-*` sets (Research) or `owner-*` sets.
 - Tombstone every other set whose id is not `exam-1-627`, not `paper-*`, and not `owner-*`.

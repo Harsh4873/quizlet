@@ -26,25 +26,30 @@ export function CardsHome({ sets, onStudy }: CardsHomeProps) {
       });
   }, [indexSet, query, sets.length]);
 
+  const folders = [
+    { title: 'CSCE 627', entries: sets.filter((entry) => entry.set.id === EXAM_SET_ID) },
+    { title: 'Research', entries: sets.filter((entry) => isOwnerSetId(entry.set.id)) },
+  ].filter((folder) => folder.entries.length > 0);
+
   return (
     <div className="cards-home fade-in">
-      <h1 className="hero-title">{sets.length === 1 ? sets[0].set.title : 'Cards'}</h1>
-      <div className={sets.length > 1 ? 'deck-set-list' : undefined}>
-        {sets.map(({ set, material }) => (
-          <button
-            key={set.id}
-            type="button"
-            className="deck-row"
-            onClick={() => onStudy(set.id, 0)}
-          >
-            <span className="deck-row-title">
-              {set.title}
-              {isOwnerSetId(set.id) ? <span className="deck-row-private">Private</span> : null}
-            </span>
-            <span className="deck-row-meta">{material.terms.length} cards</span>
-          </button>
-        ))}
-      </div>
+      <h1 className="hero-title">Cards</h1>
+      {folders.map((folder) => (
+        <section key={folder.title} className="deck-set-list" aria-label={folder.title}>
+          <h2 className="section-title">{folder.title}</h2>
+          {folder.entries.map(({ set, material }) => (
+            <button
+              key={set.id}
+              type="button"
+              className="deck-row"
+              onClick={() => onStudy(set.id, 0)}
+            >
+              <span className="deck-row-title">{set.title}</span>
+              <span className="deck-row-meta">{material.terms.length} cards</span>
+            </button>
+          ))}
+        </section>
+      ))}
 
       {sets.length === 1 && indexSet && (
         <>

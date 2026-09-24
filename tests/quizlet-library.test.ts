@@ -8,9 +8,49 @@ import {
   createOwnerBasilCsStatsSet,
   isOwnerSetId,
 } from '../src/lib/owner-set';
-import { ensureQuizletLibrary, isKeptQuizletSetId } from '../src/lib/quizlet-library';
+import { ensureQuizletLibrary, isKeptQuizletSetId, libraryAfterRejectedAccount, libraryOnOpen } from '../src/lib/quizlet-library';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from '../src/lib/sample';
 import { defaultData, upsertSet } from '../src/lib/store';
+
+describe('signed-out and rejected accounts', () => {
+  it('opens with no cards when nobody is signed in', () => {
+    const saved = upsertSet(defaultData(), {
+      id: EXAM_SET_ID,
+      title: EXAM_SET_TITLE,
+      markdown: EXAM_MARKDOWN,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    const opened = libraryOnOpen(null, { ...saved, theme: 'dark' });
+    expect(opened.sets).toEqual([]);
+    expect(opened.theme).toBe('dark');
+  });
+
+  it('keeps a returning account cache', () => {
+    const saved = upsertSet(defaultData(), {
+      id: EXAM_SET_ID,
+      title: EXAM_SET_TITLE,
+      markdown: 'Q: Cached?\nA: Yes.\n',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    expect(libraryOnOpen('vault-1', saved)).toBe(saved);
+  });
+
+  it('clears every card for a Google account outside the vault', () => {
+    const saved = upsertSet(defaultData(), {
+      id: OWNER_BASIL_CS_STATS_ID,
+      title: OWNER_BASIL_CS_STATS_TITLE,
+      markdown: BASIL_MARKDOWN,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    const cleared = libraryAfterRejectedAccount({ ...saved, theme: 'light' });
+    expect(cleared.sets).toEqual([]);
+    expect(cleared.progress).toEqual({});
+    expect(cleared.theme).toBe('light');
+  });
+});
 
 describe('quizlet set allowlist', () => {
   it('keeps Exam 1, paper-* Research sets, and owner-* private vault sets', () => {

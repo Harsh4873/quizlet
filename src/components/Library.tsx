@@ -22,6 +22,8 @@ interface LibraryProps {
   onExport: (set: StudySet) => void;
   onOpen: (set: StudySet) => void;
   allowOwnerSets?: boolean;
+  /** Paste and upload stay off until the owner vault is signed in. */
+  canImport?: boolean;
   onAddOwnerBasilSet?: () => void;
 }
 
@@ -34,6 +36,7 @@ export function Library({
   onExport,
   onOpen,
   allowOwnerSets = false,
+  canImport = false,
   onAddOwnerBasilSet,
 }: LibraryProps) {
   const [pasteOpen, setPasteOpen] = useState(data.sets.length === 0);
@@ -99,13 +102,14 @@ export function Library({
     <div className="library fade-in">
       {data.sets.length === 0 && (
         <section className="hero">
-          <h1 className="hero-title">Exam 1 flashcards</h1>
+          <h1 className="hero-title">No cards yet</h1>
           <p className="hero-sub">
-            One study set: flashcards, quiz, blanks, and match. Import replaces Exam 1.
+            Sign in with Sync. Cards live on the account. A new Google account starts empty.
           </p>
         </section>
       )}
 
+      {canImport && (
       <section
         className={`import-panel ${dragOver ? 'import-dragover' : ''}`}
         onDragOver={(e) => {
@@ -203,6 +207,7 @@ export function Library({
           </div>
         )}
       </section>
+      )}
 
       {data.sets.length > 0 && (
         <section className="sets-section" aria-label="Your study sets">
