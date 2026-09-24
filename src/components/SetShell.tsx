@@ -17,7 +17,6 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Mode, SetProgress, StudyMaterial, StudySet } from '../model';
-import type { DeckFilter } from '../lib/card-kinds';
 import { masteryPercent } from '../lib/store';
 import { isPaperSet, paperFrontMatter, paperSubtitle } from '../lib/paper-set';
 import { NotesView } from './NotesView';
@@ -33,7 +32,6 @@ interface SetShellProps {
   progress: SetProgress;
   mode: Mode;
   startIndex?: number;
-  startDeck?: DeckFilter;
   onNavigate: (mode: Mode) => void;
   onBack: () => void;
   /** Where the back link returns to — the Recall library or the Review list. */
@@ -67,7 +65,7 @@ const PAPER_TABS: { mode: Mode; label: string; icon: typeof BookOpen }[] = [
 ];
 
 export function SetShell(props: SetShellProps) {
-  const { set, material, progress, mode, startIndex = 0, startDeck, onNavigate, onBack, backLabel = 'Library', canDelete = true } = props;
+  const { set, material, progress, mode, startIndex = 0, onNavigate, onBack, backLabel = 'Library', canDelete = true } = props;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(set.markdown);
   const [refreshing, setRefreshing] = useState(false);
@@ -238,7 +236,6 @@ export function SetShell(props: SetShellProps) {
                 material={material}
                 progress={progress}
                 startIndex={startIndex}
-                startDeck={startDeck}
                 onAnswer={props.onAnswer}
                 onToggleStar={props.onToggleStar}
               />

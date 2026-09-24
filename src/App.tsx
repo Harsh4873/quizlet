@@ -38,7 +38,6 @@ import { CardsHome } from './components/CardsHome';
 import { SetShell } from './components/SetShell';
 import { SyncMenu } from './components/SyncMenu';
 import { isPaperSet } from './lib/paper-set';
-import { type DeckFilter, parseDeckFilter } from './lib/card-kinds';
 
 const SYNC_FLAG_KEY = 'recall.sync.on';
 
@@ -62,7 +61,7 @@ function setSyncFlag(on: boolean) {
 type Route =
   | { view: 'home' }
   | { view: 'cards' }
-  | { view: 'set'; setId: string; mode: Mode; card: number; deck?: DeckFilter };
+  | { view: 'set'; setId: string; mode: Mode; card: number };
 
 function parseHash(): Route {
   const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -74,7 +73,6 @@ function parseHash(): Route {
       setId: parts[1],
       mode,
       card: Number.isFinite(card) ? card : 0,
-      deck: parseDeckFilter(parts[4]),
     };
   }
   if (parts[0] === 'cards') return { view: 'cards' };
@@ -93,8 +91,8 @@ function openCards() {
   navigate('/cards');
 }
 
-function openSetCards(setId: string, index = 0, deck?: DeckFilter) {
-  navigate(`/set/${setId}/cards/${index}${deck ? `/${deck}` : ''}`);
+function openSetCards(setId: string, index = 0) {
+  navigate(`/set/${setId}/cards/${index}`);
 }
 
 export default function App() {
@@ -419,7 +417,6 @@ export default function App() {
             progress={getProgress(data, activeSet.id)}
             mode={route.mode}
             startIndex={route.card}
-            startDeck={route.deck}
             onNavigate={(mode) => navigate(`/set/${activeSet.id}/${mode}`)}
             onBack={openCards}
             backLabel="Cards"

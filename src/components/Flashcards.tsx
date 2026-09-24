@@ -2,17 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Search, Shuffle, Star, X } from 'lucide-react';
 import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { mulberry32, shuffle } from '../lib/questions';
-import {
-  DECK_FILTERS,
-  DECK_INFO,
-  type DeckFilter,
-  inDeck,
-  kindOf,
-  loadSavedDeck,
-  saveDeck,
-} from '../lib/card-kinds';
-import { priorityGroup, priorityRank } from '../lib/priority';
-import { tupleLabel, tupleRank } from '../lib/tuples';
+import { kindOf } from '../lib/card-kinds';
 import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
@@ -23,8 +13,6 @@ interface FlashcardsProps {
   onAnswer: (cardId: string, correct: boolean) => void;
   onToggleStar: (cardId: string) => void;
   startIndex?: number;
-  /** Card type to open with. An index without a type means the whole deck. */
-  startDeck?: DeckFilter;
 }
 
 function textSizeClass(text: string): string {
@@ -33,13 +21,7 @@ function textSizeClass(text: string): string {
   return '';
 }
 
-export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0, startDeck }: FlashcardsProps) {
-  const hasKinds = useMemo(() => material.terms.some((card) => kindOf(card)), [material]);
-  const [deckFilter, setDeckFilter] = useState<DeckFilter>(() => {
-    if (!hasKinds) return 'all';
-    if (startDeck) return startDeck;
-    return startIndex > 0 ? 'all' : (loadSavedDeck() ?? 'all');
-  });
+export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0 }: FlashcardsProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const [termFirst, setTermFirst] = useState(true);
   const [seed, setSeed] = useState(0);
@@ -54,25 +36,16 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   // Once the learner changes the deck, the start card from the URL no longer applies.
   const startConsumed = useRef(false);
 
-  const counts = useMemo(() => {
-    const result = {} as Record<DeckFilter, number>;
-    for (const f of DECK_FILTERS) result[f] = material.terms.filter((card) => inDeck(card, f)).length;
-    return result;
-  }, [material]);
-
   // The deck is frozen for the round: progress changes mid-round must not reorder it.
   const deck: TermCard[] = useMemo(() => {
     const source = material.terms.filter((card) => {
-      if (!inDeck(card, deckFilter)) return false;
       if (filter === 'weak') return (progress.cards[card.id]?.box ?? 0) < 3;
       if (filter === 'starred') return progress.cards[card.id]?.starred === true;
       return true;
     });
-    const rank = deckFilter === 'priority' ? priorityRank : deckFilter === 'tuples' ? tupleRank : undefined;
-    const ordered = rank ? [...source].sort((a, b) => (rank(a.term) ?? 0) - (rank(b.term) ?? 0)) : source;
-    return seed === 0 ? ordered : shuffle(ordered, mulberry32(seed));
+    return seed === 0 ? source : shuffle(source, mulberry32(seed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [material, filter, deckFilter, seed, roundKey]);
+  }, [material, filter, seed, roundKey]);
 
   const restart = (nextFilter?: Filter) => {
     if (nextFilter) setFilter(nextFilter);
@@ -84,16 +57,9 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
     setDone(false);
   };
 
-  const chooseDeck = (next: DeckFilter) => {
-    setDeckFilter(next);
-    saveDeck(next);
-    restart();
-  };
-
   useEffect(() => {
     startConsumed.current = false;
-    if (startDeck && hasKinds) setDeckFilter(startDeck);
-  }, [startIndex, startDeck, hasKinds]);
+  }, [startIndex]);
 
   useEffect(() => {
     if (seed !== 0 || startConsumed.current) return;
@@ -144,44 +110,14 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
     return <EmptyModeNote text="No term cards were found in this set. Add lines like “**Term**: definition” to your notes." />;
   }
 
-  const deckPicker = hasKinds ? (
-    <div className="deck-picker">
-      <div className="deck-chips" role="group" aria-label="Card type">
-        {DECK_FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className={`chip deck-chip ${deckFilter === f ? 'chip-active' : ''}`}
-            aria-pressed={deckFilter === f}
-            onClick={() => chooseDeck(f)}
-          >
-            {DECK_INFO[f].label}
-            <span className="deck-chip-count">{counts[f]}</span>
-          </button>
-        ))}
-      </div>
-      <p className="deck-hint">
-        {DECK_INFO[deckFilter].place ? (
-          <span className={`place-tag place-${DECK_INFO[deckFilter].place}`}>
-            {DECK_INFO[deckFilter].place === 'gym' ? 'Gym' : 'Desk'}
-          </span>
-        ) : null}
-        {DECK_INFO[deckFilter].hint}
-      </p>
-    </div>
-  ) : null;
-
   if (deck.length === 0) {
     return (
       <div className="flashcards fade-in">
-        {deckPicker}
         <div className="mode-empty">
           <p>
             {filter === 'weak'
               ? 'Nothing left to review here. Every card is mastered.'
-              : filter === 'starred'
-                ? 'No starred cards here yet. Star cards while you study.'
-                : 'No cards of this type in the deck.'}
+              : 'No starred cards here yet. Star cards while you study.'}
           </p>
           <button type="button" className="btn" onClick={() => restart('all')}>
             Study all of these
@@ -213,14 +149,8 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   const starred = card ? progress.cards[card.id]?.starred === true : false;
   const info = card ? kindOf(card) : undefined;
-  const curatedLabel =
-    card && deckFilter === 'priority'
-      ? priorityGroup(card.term)?.label
-      : card && deckFilter === 'tuples'
-        ? tupleLabel(card.term)
-        : undefined;
   const questionCard = card?.source === 'section';
-  const promptLabel = curatedLabel ?? (info ? info.label : questionCard ? 'Question' : 'Term');
+  const promptLabel = info ? info.label : questionCard ? 'Question' : 'Term';
   const answerLabel = info || questionCard ? 'Answer' : 'Definition';
   const frontLabel = termFirst ? promptLabel : answerLabel;
   const backLabel = termFirst ? answerLabel : promptLabel;
@@ -230,7 +160,6 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   return (
     <div className="flashcards fade-in">
-      {deckPicker}
       <div className="mode-toolbar">
         <div className="toolbar-group" role="group" aria-label="Card filter">
           {(['all', 'weak', 'starred'] as const).map((f) => (
@@ -240,7 +169,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
               className={`chip ${filter === f ? 'chip-active' : ''}`}
               onClick={() => restart(f)}
             >
-              {f === 'all' ? `All (${counts[deckFilter]})` : f === 'weak' ? 'Weak' : 'Starred'}
+              {f === 'all' ? `All (${material.terms.length})` : f === 'weak' ? 'Weak' : 'Starred'}
             </button>
           ))}
         </div>

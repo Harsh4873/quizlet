@@ -57,12 +57,6 @@ describe('flashcards on a phone', () => {
     expect(rule).toMatch(/flex:\s*1/);
   });
 
-  it('scrolls the card-type chips sideways instead of stacking rows', () => {
-    const rule = declarations('.deck-chips', phone);
-    expect(rule).toMatch(/flex-wrap:\s*nowrap/);
-    expect(rule).toMatch(/overflow-x:\s*auto/);
-  });
-
   it('lets the two-row header scroll away', () => {
     expect(declarations('.app-header', phone)).toMatch(/position:\s*relative/);
   });
