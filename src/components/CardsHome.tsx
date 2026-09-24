@@ -28,7 +28,7 @@ export function CardsHome({ sets, onStudy }: CardsHomeProps) {
 
   return (
     <div className="cards-home fade-in">
-      <h1 className="hero-title">{sets.length === 1 ? sets[0].set.title : 'Exam 1'}</h1>
+      <h1 className="hero-title">{sets.length === 1 ? sets[0].set.title : 'Cards'}</h1>
       <div className={sets.length > 1 ? 'deck-set-list' : undefined}>
         {sets.map(({ set, material }) => (
           <button

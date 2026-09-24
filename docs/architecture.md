@@ -9,7 +9,6 @@ Flashcard extraction and study modes were transported from Research (Recall). Pa
 Shared collection: `recall_users/{vaultId}/sets` (same ruleset as Research).
 
 - Ensure set id `exam-1-627` exists with the bundled Exam 1 markdown when missing.
-- Never tombstone `paper-*` sets (Research) or `owner-*` sets (private vault flashcards).
-- Do not create or overwrite `owner-*` sets from a bundle. Ids and titles may live in the app; card bodies stay in Firestore.
+- Ensure `owner-basil-cs-stats` (`Basil CS/stats, Ioerger Sep 2026`) exists from `src/lib/basil-cs-stats.md` when missing or empty. A deleted copy stays deleted. Other `owner-*` markdown is not overwritten.
+- Never tombstone `paper-*` sets (Research) or `owner-*` sets.
 - Tombstone every other set whose id is not `exam-1-627`, not `paper-*`, and not `owner-*`.
-- Known private set: `owner-basil-cs-stats` (`Basil CS/stats — Ioerger Sep 2026`). Public visitors without vault membership only see Exam 1 from the static app.

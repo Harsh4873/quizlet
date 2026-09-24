@@ -5,7 +5,7 @@ Quizlet is the owner's exam flashcard app, published at `https://harsh.bet/quizl
 ## What it does
 
 - Ships the public **Exam 1** set (`exam-1-627`), bundled from the course Q/A notes.
-- Signed-in owner-vault members can keep private `owner-*` decks (for example `owner-basil-cs-stats`). Only the id and title live in the app; card bodies stay in the shared Firestore vault and are never bundled.
+- Ships **Basil CS/stats** (`owner-basil-cs-stats`) next to Exam 1. The cards are bundled, so the set opens without Sync or a file upload.
 - Study modes: **Notes**, **Flashcards**, **Quiz**, **Blanks**, and **Match**.
 - One cumulative Exam 1 deck. Cards still sit under `## Terms`, `## Rules`, `## Theorems`, and `## Examples`, and each card is labeled, but study is the whole deck.
 - Import/export can replace Exam 1 or, when Sync is on, upsert the private Basil set (JSON or markdown).

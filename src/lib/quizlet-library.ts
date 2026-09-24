@@ -1,5 +1,11 @@
 import type { AppData, StudySet } from '../model';
-import { isOwnerSetId } from './owner-set';
+import {
+  BASIL_MARKDOWN,
+  OWNER_BASIL_CS_STATS_ID,
+  OWNER_BASIL_CS_STATS_TITLE,
+  createOwnerBasilCsStatsSet,
+  isOwnerSetId,
+} from './owner-set';
 import { PAPER_PREFIX } from './paper-set';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from './sample';
 import { deleteSet, nextDataTimestamp, upsertSet } from './store';
@@ -20,10 +26,29 @@ export function clearSetTombstone(data: AppData, setId: string): AppData {
 }
 
 /**
- * Quizlet ships the public Exam 1 deck. Leave `paper-*` (Research) and
- * `owner-*` (private vault) sets alone, including their remote/local
- * markdown. Tombstone every other flashcard set so old decks disappear
- * on sync. Never create or overwrite an `owner-*` set from a bundle.
+ * Fill a missing or empty Basil set with the bundled cards.
+ * A deleted set stays deleted. A set that already has cards is left alone.
+ */
+function ensureBasilDeck(data: AppData, now: number): AppData {
+  const existing = data.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
+  if (!existing) {
+    if (data.tombstones[OWNER_BASIL_CS_STATS_ID]) return data;
+    const stamp = nextDataTimestamp(data, now);
+    return clearSetTombstone(upsertSet(data, createOwnerBasilCsStatsSet(stamp)), OWNER_BASIL_CS_STATS_ID);
+  }
+  if (existing.markdown.trim()) return data;
+  return upsertSet(data, {
+    ...existing,
+    title: existing.title.trim() || OWNER_BASIL_CS_STATS_TITLE,
+    markdown: BASIL_MARKDOWN,
+    updatedAt: nextDataTimestamp(data, now),
+  });
+}
+
+/**
+ * Quizlet ships Exam 1 and Basil CS/stats. Leave `paper-*` (Research) and
+ * other `owner-*` sets alone, including their markdown. Tombstone every other
+ * flashcard set so old decks disappear on sync.
  */
 export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
   let next = data;
@@ -45,7 +70,7 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
       markdown: EXAM_MARKDOWN,
       updatedAt: nextDataTimestamp(next, now),
     });
-    return next;
+    return ensureBasilDeck(next, now);
   }
   if (!existing) {
     const stamp = nextDataTimestamp(next, now);
@@ -56,7 +81,7 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
       createdAt: stamp,
       updatedAt: stamp,
     };
-    return clearSetTombstone(upsertSet(next, created), EXAM_SET_ID);
+    return ensureBasilDeck(clearSetTombstone(upsertSet(next, created), EXAM_SET_ID), now);
   }
 
   if (!existing.markdown.trim()) {
@@ -68,5 +93,5 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
     });
   }
 
-  return next;
+  return ensureBasilDeck(next, now);
 }

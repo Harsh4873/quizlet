@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { extractStudyMaterial } from '../src/lib/extract';
 import {
+  BASIL_MARKDOWN,
   OWNER_BASIL_CS_STATS_ID,
   OWNER_BASIL_CS_STATS_TITLE,
   OWNER_SET_PREFIX,
@@ -24,20 +24,18 @@ describe('quizlet set allowlist', () => {
     expect(isOwnerSetId(EXAM_SET_ID)).toBe(false);
   });
 
-  it('creates an empty owner-basil-cs-stats shell with the stable id and title', () => {
+  it('creates the bundled Basil deck', () => {
     const set = createOwnerBasilCsStatsSet(42);
     expect(set.id).toBe(OWNER_BASIL_CS_STATS_ID);
     expect(set.title).toBe(OWNER_BASIL_CS_STATS_TITLE);
-    expect(set.markdown).toBe('');
+    expect(set.markdown).toBe(BASIL_MARKDOWN);
     expect(set.createdAt).toBe(42);
-  });
-
-  it('does not ship private basil card bodies in source', () => {
-    const src = readFileSync(new URL('../src/lib/owner-set.ts', import.meta.url), 'utf8');
-    expect(src).not.toMatch(/^Q:/m);
-    expect(src).not.toMatch(/^A:/m);
-    expect(src).toContain(OWNER_BASIL_CS_STATS_ID);
-    expect(src).toContain(OWNER_BASIL_CS_STATS_TITLE);
+    const { terms } = extractStudyMaterial(BASIL_MARKDOWN);
+    const questions = BASIL_MARKDOWN.match(/^Q: .+$/gm) ?? [];
+    expect(questions.length).toBe(41);
+    expect(terms).toHaveLength(questions.length);
+    expect(terms.every((term) => term.source === 'qa')).toBe(true);
+    expect(BASIL_MARKDOWN).not.toMatch(/Harsh/i);
   });
 });
 
@@ -52,12 +50,15 @@ describe('ensureQuizletLibrary', () => {
     expect(next.tombstones[OWNER_BASIL_CS_STATS_ID]).toBe(50);
   });
 
-  it('creates exam-1-627 with the bundled markdown and no private owner set', () => {
+  it('creates exam-1-627 and the bundled Basil deck', () => {
     const next = ensureQuizletLibrary(defaultData(), 1000);
     const exam = next.sets.find((set) => set.id === EXAM_SET_ID);
+    const basil = next.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
     expect(exam?.title).toBe(EXAM_SET_TITLE);
     expect(exam?.markdown).toBe(EXAM_MARKDOWN);
-    expect(next.sets.map((set) => set.id)).toEqual([EXAM_SET_ID]);
+    expect(basil?.title).toBe(OWNER_BASIL_CS_STATS_TITLE);
+    expect(basil?.markdown).toBe(BASIL_MARKDOWN);
+    expect(next.sets.map((set) => set.id).sort()).toEqual([EXAM_SET_ID, OWNER_BASIL_CS_STATS_ID]);
   });
 
   it('tombstones stray flashcard decks and keeps paper and owner sets', () => {
@@ -105,19 +106,31 @@ describe('ensureQuizletLibrary', () => {
     expect(owner?.markdown).toContain('Q: Keep this?');
   });
 
-  it('does not overwrite owner-* markdown from a bundle', () => {
-    const data = upsertSet(defaultData(), {
+  it('fills an empty Basil set with the bundled cards and leaves a filled set alone', () => {
+    const empty = upsertSet(defaultData(), {
       id: OWNER_BASIL_CS_STATS_ID,
       title: 'Custom title',
       markdown: '',
       createdAt: 2,
       updatedAt: 2,
     });
-    const next = ensureQuizletLibrary(data, 9000);
-    const owner = next.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
+    const filledEmpty = ensureQuizletLibrary(empty, 9000);
+    const owner = filledEmpty.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
     expect(owner?.title).toBe('Custom title');
-    expect(owner?.markdown).toBe('');
-    expect(owner?.updatedAt).toBe(2);
+    expect(owner?.markdown).toBe(BASIL_MARKDOWN);
+    expect(owner?.updatedAt).toBeGreaterThan(2);
+
+    const custom = upsertSet(defaultData(), {
+      id: OWNER_BASIL_CS_STATS_ID,
+      title: 'Custom title',
+      markdown: 'Q: Keep this?\nA: Yes, vault only.\n',
+      createdAt: 2,
+      updatedAt: 2,
+    });
+    const kept = ensureQuizletLibrary(custom, 9000);
+    const customOwner = kept.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
+    expect(customOwner?.markdown).toContain('Q: Keep this?');
+    expect(customOwner?.updatedAt).toBe(2);
   });
 
   it('clears a leftover tombstone for a live owner set so sync cannot wipe it', () => {
