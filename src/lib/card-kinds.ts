@@ -1,4 +1,5 @@
 import type { TermCard } from '../model';
+import { priorityRank } from './priority';
 
 /** The four `##` sections of the Exam 1 deck. */
 export type CardKind = 'term' | 'rule' | 'theorem' | 'example';
@@ -6,7 +7,7 @@ export type CardKind = 'term' | 'rule' | 'theorem' | 'example';
 /** Gym cards are said out loud and flipped; desk cards need paper. */
 export type StudyPlace = 'gym' | 'desk';
 
-export type DeckFilter = 'all' | 'gym' | CardKind;
+export type DeckFilter = 'priority' | 'all' | 'gym' | CardKind;
 
 export interface KindInfo {
   kind: CardKind;
@@ -34,6 +35,11 @@ interface DeckInfo {
 }
 
 export const DECK_INFO: Record<DeckFilter, DeckInfo> = {
+  priority: {
+    label: 'Priority',
+    hint: 'Short on time? These 30 first: 10 definitions, 10 things to know, 10 examples.',
+    short: 'Short on time? 30 cards: 10 definitions, 10 things to know, 10 examples.',
+  },
   gym: {
     label: 'Gym',
     hint: 'Terms, rules, and theorems. Say the answer out loud, then flip.',
@@ -71,16 +77,17 @@ export const DECK_INFO: Record<DeckFilter, DeckInfo> = {
   },
 };
 
-/** Chip order: the gym mix first, the whole deck last. */
-export const DECK_FILTERS: readonly DeckFilter[] = ['gym', 'term', 'rule', 'theorem', 'example', 'all'];
+/** Chip order: the short list first, then the gym mix, the whole deck last. */
+export const DECK_FILTERS: readonly DeckFilter[] = ['priority', 'gym', 'term', 'rule', 'theorem', 'example', 'all'];
 
 export function kindOf(card: Pick<TermCard, 'section'>): KindInfo | undefined {
   const key = card.section.trim().toLowerCase();
   return CARD_KINDS.find((info) => info.heading.toLowerCase() === key || info.label.toLowerCase() === key);
 }
 
-export function inDeck(card: Pick<TermCard, 'section'>, filter: DeckFilter): boolean {
+export function inDeck(card: Pick<TermCard, 'section'> & { term?: string }, filter: DeckFilter): boolean {
   if (filter === 'all') return true;
+  if (filter === 'priority') return card.term !== undefined && priorityRank(card.term) !== undefined;
   const info = kindOf(card);
   if (!info) return false;
   return filter === 'gym' ? info.place === 'gym' : info.kind === filter;

@@ -11,6 +11,7 @@ import {
   loadSavedDeck,
   saveDeck,
 } from '../lib/card-kinds';
+import { priorityGroup, priorityRank } from '../lib/priority';
 import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
@@ -66,7 +67,11 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
       if (filter === 'starred') return progress.cards[card.id]?.starred === true;
       return true;
     });
-    return seed === 0 ? source : shuffle(source, mulberry32(seed));
+    const ordered =
+      deckFilter === 'priority'
+        ? [...source].sort((a, b) => (priorityRank(a.term) ?? 0) - (priorityRank(b.term) ?? 0))
+        : source;
+    return seed === 0 ? ordered : shuffle(ordered, mulberry32(seed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [material, filter, deckFilter, seed, roundKey]);
 
@@ -209,8 +214,9 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   const starred = card ? progress.cards[card.id]?.starred === true : false;
   const info = card ? kindOf(card) : undefined;
+  const group = card && deckFilter === 'priority' ? priorityGroup(card.term) : undefined;
   const questionCard = card?.source === 'section';
-  const promptLabel = info ? info.label : questionCard ? 'Question' : 'Term';
+  const promptLabel = group ? group.label : info ? info.label : questionCard ? 'Question' : 'Term';
   const answerLabel = info || questionCard ? 'Answer' : 'Definition';
   const frontLabel = termFirst ? promptLabel : answerLabel;
   const backLabel = termFirst ? answerLabel : promptLabel;

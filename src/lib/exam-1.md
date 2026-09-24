@@ -200,7 +200,7 @@ Q: Given a DFA and a long accepted string, how do you find the proof's p, x, y, 
 A: p is the number of states. Run the string and list the states. Find the first state that repeats: x is what you read before its first visit, y is what you read between the two visits, and z is the rest. Example: on a 3-state DFA where 0 loops at the start state, s = 0010110 gives x = ε, y = 0, z = 010110.
 
 Q: How do you prove a string is accepted, using the definition of computation?
-A: Write the string as w1 through wn. List states r0 through rn. r0 is the start. Each next state is δ of the previous state and the next symbol. Accept when rn is in F. She might ask this instead of "write the definition."
+A: Write the string as w1 … wn and list states r0 … rn. r0 is the start, each r(i+1) = δ(ri, w(i+1)), and accept when rn is in F. Example: 0110 on the even-number-of-1s DFA gives r0 = q0, r1 = q0, r2 = q1, r3 = q0, r4 = q0, and q0 accepts.
 
 Q: When does a pop arrow fail to fire?
 A: When the symbol it needs is not on top of the stack. That branch dies. If every branch dies, the string is rejected.
@@ -309,7 +309,7 @@ Q: Draw a DFA whose only string is ε.
 A: The start state is accept. Any real symbol leaves into a rejecting sink and stays there. [[fig:dfa-eps]]
 
 Q: Write the 5-tuple of the DFA that simulates an NFA (Q, Σ, δ, q0, F).
-A: States: every subset of Q. Start: q0 plus every state it reaches by ε-arrows. On symbol a from a set R: every state reachable from some state in R by reading a, then following ε-arrows. Accept: every subset that contains a state of F. She may hand you the power set so this stays short.
+A: Q′ = P(Q): every set of NFA states. Σ: same alphabet. q0′ = E({q0}): the start plus its free ε-moves. δ′(R, a) = {q : q ∈ E(δ(r, a)) for some r ∈ R}: move every state in R on a, then add free moves. F′ = {R ∈ Q′ : R ∩ F ≠ ∅}: any set holding an accept state. E(S) is S plus everything reachable by ε-arrows.
 
 Q: Regex for at least three 1s.
 A: 0∗10∗10∗1(0 ∪ 1)∗. A regular expression is a legal way to prove a language is regular. She will not require one, and she will not ask for a grammar.
