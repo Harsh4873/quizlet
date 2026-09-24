@@ -1,6 +1,6 @@
 /**
- * The short list to study when time is short: ten definitions, ten things to know,
- * ten examples. Each entry is the exact `Q:` text of a card in `exam-1.md`;
+ * The short list to study when time is short: definitions, things to know, and
+ * examples. Each entry is the exact `Q:` text of a card in `exam-1.md`;
  * `tests/priority.test.ts` fails if a card is renamed out from under this list.
  */
 export interface PriorityGroup {
@@ -38,6 +38,9 @@ export const PRIORITY_GROUPS: readonly PriorityGroup[] = [
       'How do you build an NFA for the concatenation of two NFAs?',
       'How do you build an NFA for the star of an NFA?',
       'How do you prove a string is accepted, using the definition of computation?',
+      'What is the trick for writing any 5-tuple?',
+      'In each construction, what does Q′ remember?',
+      'In the perfect shuffle machine, what does the extra third part of each state remember?',
     ],
   },
   {
@@ -48,6 +51,7 @@ export const PRIORITY_GROUPS: readonly PriorityGroup[] = [
       'PDA for {0^n 1^n}, the class machine.',
       'DFA for strings that start and end with the same symbol.',
       'Write the 5-tuple for the perfect shuffle DFA.',
+      'If a DROP-style question shows up, what earns the points?',
       'Show {a^(2^n) : n ≥ 0} is not regular.',
       "Show the one-a language is not regular: a's, then b's, then c's, where exactly one a forces equal b's and c's.",
       'Prove A − B is regular when A and B are, using DFAs only.',

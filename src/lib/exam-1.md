@@ -119,7 +119,7 @@ Q: Which closure is she most likely to ask you to prove?
 A: One from class, often union. Default proof: an NFA picture, new start, ε into each old start, plus a sentence. If she says DFAs only, use the product and do not cite NFA equivalence. A false claim dies by one counterexample.
 
 Q: Is the construction enough, or do you also prove the machine correct?
-A: The construction is the proof. A picture plus a short description is enough for a closure she did in class, such as union: a new start with an ε-arrow into each old start. She does not want a separate correctness essay.
+A: The construction is the proof: "the construction itself is sufficient proof." The default closure proof is an NFA picture plus a short description. Write the 5-tuple only if the question asks for it. No correctness essay, and no "prove both directions" write-up.
 
 Q: How do you classify a language on this exam?
 A: Regular: give a DFA, an NFA, a regular expression, or a closure argument. Not regular: pumping lemma, by contradiction. Context-free but not regular: pumping, then a PDA. You cannot be asked to prove "not context-free." {0^n 1^n} is the basic example of that middle case.
@@ -165,6 +165,18 @@ A: Add a new start state that is accepting, so ε is in, with an ε-arrow to the
 
 Q: How do you make an NFA with exactly one accept state?
 A: Add one new accept state. Draw an ε-arrow from every old accept state to it, and make the old accept states non-accepting. Every accepting path now ends in the one new state.
+
+Q: What is the trick for writing any 5-tuple?
+A: Q′ is just what the new machine has to remember. Once you know that, the other four lines follow: Σ stays the same, δ′ moves each piece when a letter is read, q0′ is where everything starts, and F′ says when to accept.
+
+Q: In each construction, what does Q′ remember?
+A: Product, A − B: a pair, where A’s machine is and where B’s machine is. Perfect shuffle: that pair, plus whose turn it is. DROP: where the old machine is, plus whether the free move is used. Subset (NFA to DFA): the set of places the NFA could be. [[fig:q-prime-table]]
+
+Q: In the perfect shuffle machine, what does the extra third part of each state remember?
+A: Whose turn it is. After A’s machine reads a symbol it becomes B’s turn, and after B’s it goes back. Accept only on A’s turn, so both machines have read the same number of symbols. [[fig:shuffle-turn]]
+
+Q: If a DROP-style question shows up, what earns the points?
+A: All the points are in one idea: make two copies of the machine, allow exactly one free move that pretends to read the missing letter, and accept only in the second copy. Draw that picture, write that sentence, and you’re done. It could show up: DROP’s definition is short. [[fig:drop-copies]]
 
 Q: Does gluing two NFAs with ε-arrows put ε in the union?
 A: Not by itself. The new ε-arrows only choose a machine. ε is in the union only if it was already accepted by one of the two machines.
@@ -333,13 +345,13 @@ Q: Prove A − B is regular when A and B are, using DFAs only.
 A: Run the product of the two DFAs: states are pairs, and each symbol moves both parts. Accept a pair when the first part accepts and the second part does not. That is the intersection idea and the complement idea in one machine. [[fig:diff-grid]]
 
 Q: Write the 5-tuple for the perfect shuffle DFA.
-A: From DFAs (QA, Σ, δA, sA, FA) and (QB, Σ, δB, sB, FB): states QA × QB × {A, B}, start (sA, sB, A), accept FA × FB × {A}. δ((p, q, A), c) = (δA(p, c), q, B). δ((p, q, B), c) = (p, δB(q, c), A). ε is in exactly when both start states accept. [[fig:shuffle-turn]]
+A: Q′ remembers where each machine is, plus whose turn it is. From DFAs (QA, Σ, δA, sA, FA) and (QB, Σ, δB, sB, FB): states QA × QB × {A, B}, start (sA, sB, A), accept FA × FB × {A}. δ((p, q, A), c) = (δA(p, c), q, B). δ((p, q, B), c) = (p, δB(q, c), A). ε is in exactly when both start states accept. [[fig:shuffle-turn]]
 
 Q: Show the reverse of a regular language is regular.
 A: Take an NFA or DFA for A and reverse every arrow. Add a new start state with ε-arrows to every old accept state. The old start becomes the only accept state. An accepting path for w in the old machine, walked backward, is an accepting path for the reverse of w in the new one.
 
 Q: Show DROP-OUT(A), every string of A with one symbol removed, is regular.
-A: Make two copies of A's DFA. Copy 1 means nothing has been dropped yet, copy 2 means one symbol has. From each state q in copy 1, for every symbol a, draw an ε-arrow to the copy-2 state that q reaches on a: that a is the dropped symbol. Start in copy 1. Accept only in copy 2's accept states.
+A: Make two copies of A's DFA. Copy 1 means nothing has been dropped yet, copy 2 means one symbol has. From each state q in copy 1, for every symbol a, draw an ε-arrow to the copy-2 state that q reaches on a: that a is the dropped symbol. Start in copy 1. Accept only in copy 2's accept states. [[fig:drop-copies]]
 
 Q: For regular L and a fixed symbol a, show L/a = {w : wa ∈ L} is regular. What about L/B?
 A: Keep L's DFA and change only the accept states. For L/a, a state q accepts when reading a from q lands in an old accept state. For L/B = {w : wy ∈ L for some y in B}, a state accepts when some string of B leads from it to an old accept state. B does not even have to be regular. [[fig:quotient-ab]]

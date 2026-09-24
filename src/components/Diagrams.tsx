@@ -246,6 +246,36 @@ export function DiffGridFigure() {
   );
 }
 
+export function QPrimeTableFigure() {
+  const rows: [string, string][] = [
+    ['Product, A − B', 'a pair: where A’s machine is, where B’s machine is'],
+    ['Perfect shuffle', 'that pair, plus whose turn it is'],
+    ['DROP', 'where the old machine is, plus whether the free move is used'],
+    ['Subset (NFA → DFA)', 'the set of places the NFA could be'],
+  ];
+  const top = 14;
+  const rowH = 36;
+  const split = 160;
+  const width = 540;
+  return (
+    <svg className="machine" viewBox={`0 0 ${width} ${top + rowH * 5 + 10}`} role="img" aria-label="Table: what Q prime remembers. Product, A minus B: a pair. Perfect shuffle: the pair plus whose turn it is. DROP: where the old machine is plus whether the free move is used. Subset: the set of places the NFA could be.">
+      <rect x={10} y={top} width={width - 20} height={rowH} fill="currentColor" opacity={0.1} />
+      <text x={20} y={top + 23} fill="currentColor" fontSize="13" fontWeight="800">Construction</text>
+      <text x={split + 10} y={top + 23} fill="currentColor" fontSize="13" fontWeight="800">What Q′ remembers</text>
+      {rows.map(([name, memory], i) => (
+        <g key={name}>
+          <text x={20} y={top + rowH * (i + 1) + 23} fill="currentColor" fontSize="12.5" fontWeight="700">{name}</text>
+          <text x={split + 10} y={top + rowH * (i + 1) + 23} fill="currentColor" fontSize="12.5" fontWeight="500">{memory}</text>
+        </g>
+      ))}
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <line key={i} x1={10} x2={width - 10} y1={top + rowH * i} y2={top + rowH * i} stroke="currentColor" strokeWidth={i === 0 || i === 5 ? 1.6 : 0.8} />
+      ))}
+      <line x1={split} x2={split} y1={top} y2={top + rowH * 5} stroke="currentColor" strokeWidth={0.8} />
+    </svg>
+  );
+}
+
 export function SubsetVennFigure() {
   return (
     <svg className="machine" viewBox="0 0 360 200" role="img" aria-label="A big box for sigma star, which is regular. Inside it, an oval for 0 to the n 1 to the n, which is not regular.">

@@ -6,6 +6,7 @@ import {
   PowersGapFigure,
   PumpOneAFigure,
   PumpSplitFigure,
+  QPrimeTableFigure,
   SubsetVennFigure,
 } from './Diagrams';
 
@@ -839,6 +840,36 @@ const FIGURES: Record<string, ReactNode> = {
       texts={[{ x: 210, y: 182, text: 'reading bit b from remainder r goes to (2r + b) mod 3', size: 11.5 }]}
     />
   ),
+  'drop-copies': (
+    <Machine
+      aria="DROP for A = {ab}. Copy 1 on top means nothing is dropped yet; copy 2 below means one letter was dropped. Free epsilon moves go from s1 to m2, skipping a, and from m1 to f2, skipping b. Only f2 accepts. It accepts a and b and rejects ab."
+      width={560}
+      height={265}
+      start="s1"
+      nodes={[
+        { id: 's1', x: 70, y: 60, label: 's1' },
+        { id: 'm1', x: 200, y: 60, label: 'm1' },
+        { id: 'f1', x: 330, y: 60, label: 'f1' },
+        { id: 's2', x: 70, y: 190, label: 's2' },
+        { id: 'm2', x: 200, y: 190, label: 'm2' },
+        { id: 'f2', x: 330, y: 190, label: 'f2', accept: true },
+      ]}
+      links={[
+        { from: 's1', to: 'm1', label: 'a' },
+        { from: 'm1', to: 'f1', label: 'b' },
+        { from: 's2', to: 'm2', label: 'a' },
+        { from: 'm2', to: 'f2', label: 'b' },
+        { from: 's1', to: 'm2', label: 'ε, skip a' },
+        { from: 'm1', to: 'f2', label: 'ε, skip b' },
+      ]}
+      texts={[
+        { x: 372, y: 64, text: 'copy 1: nothing dropped yet', anchor: 'start', size: 12 },
+        { x: 372, y: 194, text: 'copy 2: one letter dropped', anchor: 'start', size: 12 },
+        { x: 200, y: 254, text: 'A = {ab}: accepts a and b, rejects ab', size: 12 },
+      ]}
+    />
+  ),
+  'q-prime-table': <QPrimeTableFigure />,
   'pda-label': <PdaLabelFigure />,
   'perfect-shuffle': <PerfectShuffleFigure />,
   'pump-split': <PumpSplitFigure />,

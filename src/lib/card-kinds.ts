@@ -37,8 +37,8 @@ interface DeckInfo {
 export const DECK_INFO: Record<DeckFilter, DeckInfo> = {
   priority: {
     label: 'Priority',
-    hint: 'Short on time? These 30 first: 10 definitions, 10 things to know, 10 examples.',
-    short: 'Short on time? 30 cards: 10 definitions, 10 things to know, 10 examples.',
+    hint: 'Short on time? Start here: definitions, then things to know, then examples.',
+    short: 'Short on time? Start here: definitions, things to know, examples.',
   },
   gym: {
     label: 'Gym',
