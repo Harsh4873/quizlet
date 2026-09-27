@@ -200,7 +200,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
       {card && (
         <button
           type="button"
-          className={`flashcard ${flipped ? 'is-flipped' : ''} ${card.figure ? 'has-figure' : ''} ${offset !== 0 ? 'is-dragging' : ''}`}
+          className={`flashcard ${flipped ? 'is-flipped' : ''} ${card.figure || card.images?.length ? 'has-figure' : ''} ${offset !== 0 ? 'is-dragging' : ''}`}
           style={{ transform: offset === 0 ? undefined : `translateX(${offset}px) rotate(${offset / 18}deg)` }}
           onPointerDown={(event) => {
             if (event.button !== 0) return;
@@ -237,11 +237,17 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
             <span className="flashcard-face flashcard-front">
               <span className="face-label">{frontLabel}</span>
               <span className={`face-text ${textSizeClass(frontText)}`}>{frontText}</span>
+              {!termFirst && card.images?.map((img, i) => (
+                <img className="card-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
+              ))}
               <span className="face-hint">Tap to flip</span>
             </span>
             <span className="flashcard-face flashcard-back">
               <span className="face-label">{backLabel}</span>
-              <span className={`face-text ${card.figure ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
+              <span className={`face-text ${card.figure || card.images?.length ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
+              {termFirst && card.images?.map((img, i) => (
+                <img className="card-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
+              ))}
               {card.figure ? <ExamFigure id={card.figure} /> : null}
               <span className="face-section">
                 {info ? `${info.heading} · ${info.place === 'gym' ? 'gym' : 'desk'}` : card.section}

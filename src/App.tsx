@@ -32,12 +32,12 @@ import {
   ensureQuizletLibrary,
   libraryAfterRejectedAccount,
   libraryOnOpen,
+  markExamImport,
 } from './lib/quizlet-library';
 import {
   OWNER_BASIL_CS_STATS_ID,
   OWNER_BASIL_CS_STATS_TITLE,
   createOwnerBasilCsStatsSet,
-  isOwnerSetId,
 } from './lib/owner-set';
 import { Library, type ImportItem } from './components/Library';
 import { CardsHome } from './components/CardsHome';
@@ -114,12 +114,17 @@ export default function App() {
   const [route, setRoute] = useState<Route>(parseHash);
   const [notice, setNotice] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'off' });
+  const syncStatusRef = useRef(syncStatus);
+  syncStatusRef.current = syncStatus;
   const cloudRef = useRef<CloudEngine | null>(null);
 
   const bootCloud = async (): Promise<CloudEngine> => {
     const { startCloud } = await import('./lib/cloud');
     const engine = startCloud({
-      onStatus: setSyncStatus,
+      onStatus: (status) => {
+        syncStatusRef.current = status;
+        setSyncStatus(status);
+      },
       onAccount: (vaultId, legacyUid) => {
         const previousUid = activeAccountRef.current;
         ownerReadyRef.current = true;
@@ -174,6 +179,7 @@ export default function App() {
     ownerReadyRef.current = false;
     setOwnerReady(false);
     setSyncFlag(false);
+    syncStatusRef.current = { state: 'off' };
     setSyncStatus({ state: 'off' });
     await cloudRef.current?.signOut();
     setData((current) => libraryAfterRejectedAccount(current));
@@ -245,9 +251,10 @@ export default function App() {
       return;
     }
     const errors: string[] = [];
-    let next = data;
+    let next = dataRef.current;
     let importedId: string | null = null;
     let importedTitle = EXAM_SET_TITLE;
+    let importedSummary = '';
     for (const item of items) {
       if (item.error) {
         errors.push(item.error);
@@ -268,6 +275,12 @@ export default function App() {
         markdown = normalizeHtmlInMarkdown(markdown);
         const docTitle = parseMarkdown(markdown).title;
         const targetId = item.setId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_ID : EXAM_SET_ID;
+        if (targetId === OWNER_BASIL_CS_STATS_ID
+          && syncStatusRef.current.state !== 'synced' && syncStatusRef.current.state !== 'syncing') {
+          errors.push('Turn on Sync with an owner-vault account before importing into Basil CS/stats.');
+          continue;
+        }
+        if (targetId === EXAM_SET_ID) markdown = markExamImport(markdown);
         const fallbackTitle = targetId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_TITLE : EXAM_SET_TITLE;
         const stamp = nextDataTimestamp(next);
         const existing = next.sets.find((set) => set.id === targetId);
@@ -281,14 +294,17 @@ export default function App() {
         next = clearSetTombstone(upsertSet(next, set), targetId);
         importedId = targetId;
         importedTitle = set.title;
+        importedSummary = item.summary ?? '';
       } catch {
         errors.push(item.title ? `“${item.title}” is not a valid export.` : 'That JSON is not a valid export.');
       }
     }
-    setData(ensureQuizletLibrary(next));
+    const curated = ensureQuizletLibrary(next);
+    dataRef.current = curated;
+    setData(curated);
     if (errors.length > 0) setNotice(errors[0]);
     else if (importedId) {
-      setNotice(importedId === EXAM_SET_ID ? 'Updated Exam 1.' : `Updated ${importedTitle}.`);
+      setNotice(`${importedId === EXAM_SET_ID ? 'Updated Exam 1' : `Updated ${importedTitle}`}.${importedSummary ? ` ${importedSummary}.` : ''}`);
       if (importedId === EXAM_SET_ID) openCards();
       else openSetCards(importedId);
     }
@@ -387,8 +403,7 @@ export default function App() {
   const examSet = data.sets.find((s) => s.id === EXAM_SET_ID);
   const allowOwnerSets =
     syncStatus.state === 'synced'
-    || syncStatus.state === 'syncing'
-    || data.sets.some((set) => isOwnerSetId(set.id));
+    || syncStatus.state === 'syncing';
 
   useEffect(() => {
     if (route.view === 'set' && !activeSet) openCards();

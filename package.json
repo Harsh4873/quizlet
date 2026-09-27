@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "firebase": "^12.16.0",
+    "jszip": "^3.10.2",
     "lucide-react": "^0.468.0",
     "pdfjs-dist": "^5.7.284",
     "react": "^18.3.1",
@@ -25,6 +26,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "@xmldom/xmldom": "^0.9.12",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"

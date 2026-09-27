@@ -74,37 +74,39 @@ export function buildQuiz(terms: TermCard[], clozes: ClozeCard[], opts: QuizOpti
   const pickedTerms = opts.cardIds ? terms.filter((t) => opts.cardIds!.has(t.id)) : terms;
   const pickedClozes = opts.cardIds ? clozes.filter((c) => opts.cardIds!.has(c.id)) : clozes;
   const questions: QuizQuestion[] = [];
-
-  if (terms.length >= 4) {
-    pickedTerms.forEach((card, index) => {
-      // Section cards are already written as question → answer prompts. Asking
-      // learners to infer a question from a paragraph produces unnatural quiz
-      // items, so those cards always keep the question on the front.
-      const askForTerm = card.source !== 'section' && index % 2 === 0;
-      if (askForTerm) {
-        const options = pickDistractors(terms.map((t) => t.term), card.term, 3, rng);
-        if (options.length < 2) return;
-        questions.push(finishQuestion(card.id, 'def-to-term', card.definition, card.term, options, card.section, rng));
-      } else {
-        const options = pickDistractors(terms.map((t) => t.definition), card.definition, 3, rng);
-        if (options.length < 2) return;
-        questions.push(finishQuestion(card.id, 'term-to-def', card.term, card.definition, options, card.section, rng));
-      }
-    });
-  }
-
+  const termPool = terms.map((term) => term.term);
+  const definitionPool = terms.map((term) => term.definition);
   const answerPool = [...new Set([...clozes.map((c) => c.answer), ...terms.map((t) => t.term)])];
-  if (answerPool.length >= 4) {
-    for (const cloze of pickedClozes) {
+  const candidates: Array<{ type: 'term'; card: TermCard; index: number } | { type: 'cloze'; card: ClozeCard }> = [
+    ...(terms.length >= 4 ? pickedTerms.map((card, index) => ({ type: 'term' as const, card, index })) : []),
+    ...(answerPool.length >= 4 ? pickedClozes.map((card) => ({ type: 'cloze' as const, card })) : []),
+  ];
+  const wanted = opts.count && opts.count > 0 ? Math.min(opts.count, candidates.length) : candidates.length;
+  // The usual 5–20 question round should not build distractors for every card
+  // in a large imported presentation. Keep looking if a candidate has too few.
+  for (const candidate of shuffle(candidates, rng)) {
+    if (questions.length >= wanted) break;
+    if (candidate.type === 'cloze') {
+      const cloze = candidate.card;
       const options = pickDistractors(answerPool, cloze.answer, 3, rng);
       if (options.length < 2) continue;
       questions.push(finishQuestion(cloze.id, 'cloze', cloze.prompt, cloze.answer, options, cloze.section, rng));
+      continue;
+    }
+    const { card, index } = candidate;
+    // Authored Q/A and section prompts keep their question on the front.
+    const askForTerm = card.source !== 'section' && card.source !== 'qa' && index % 2 === 0;
+    if (askForTerm) {
+      const options = pickDistractors(termPool, card.term, 3, rng);
+      if (options.length < 2) continue;
+      questions.push(finishQuestion(card.id, 'def-to-term', card.definition, card.term, options, card.section, rng));
+    } else {
+      const options = pickDistractors(definitionPool, card.definition, 3, rng);
+      if (options.length < 2) continue;
+      questions.push(finishQuestion(card.id, 'term-to-def', card.term, card.definition, options, card.section, rng));
     }
   }
-
-  const mixed = shuffle(questions, rng);
-  const count = opts.count && opts.count > 0 ? Math.min(opts.count, mixed.length) : mixed.length;
-  return mixed.slice(0, count);
+  return shuffle(questions, rng);
 }
 
 function finishQuestion(

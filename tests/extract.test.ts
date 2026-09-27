@@ -93,6 +93,27 @@ describe('term extraction', () => {
     expect(terms[0].definition).toBe('the energy currency of the cell');
   });
 
+  it('keeps embedded images on Q/A cards without putting base64 in the answer text', () => {
+    const md = 'Q: What does Figure 1 show?\nA: The membrane. ![Membrane](data:image/png;base64,AAAA)\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(1);
+    expect(terms[0].definition).toBe('The membrane. Membrane');
+    expect(terms[0].images).toEqual([{ src: 'data:image/png;base64,AAAA', alt: 'Membrane' }]);
+  });
+
+  it('keeps distinct answers to the same authored question', () => {
+    const md = 'Q: What does the pump move?\nA: Protons across the membrane.\n\nQ: What does the pump move?\nA: Electrons to the next complex.\n';
+    const { terms } = extractStudyMaterial(md);
+    expect(terms).toHaveLength(2);
+    expect(new Set(terms.map((card) => card.id)).size).toBe(2);
+  });
+
+  it('exposes more than 140 imported Q/A cards to study modes', () => {
+    const md = Array.from({ length: 160 }, (_, i) => `Q: What is concept ${i + 1}?\nA: Definition for concept ${i + 1}.`)
+      .join('\n\n');
+    expect(extractStudyMaterial(md).terms).toHaveLength(160);
+  });
+
   it('does not ask a key-idea question about a heading that only groups Q/A cards', () => {
     const md = '## Rules\n\nQ: When does an NFA accept?\nA: When at least one path ends in an accept state.\n\nQ: When does it reject?\nA: Only when every path fails.\n';
     const { terms } = extractStudyMaterial(md);

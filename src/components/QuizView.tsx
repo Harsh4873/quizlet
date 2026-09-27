@@ -168,6 +168,9 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
       <div className="quiz-question">
         <div className="question-kind">{kindLabel}</div>
         <div className={`question-prompt ${question.kind === 'cloze' ? 'question-cloze' : ''}`}>{question.prompt}</div>
+        {material.terms.find((term) => term.id === question.cardId)?.images?.map((img, i) => (
+          <img className="quiz-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
+        ))}
       </div>
 
       <div className="options-list" role="listbox" aria-label="Answer options">

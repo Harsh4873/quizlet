@@ -11,6 +11,7 @@ export interface ImportItem {
   json?: string;
   error?: string;
   setId?: string;
+  summary?: string;
 }
 
 interface LibraryProps {
@@ -44,6 +45,9 @@ export function Library({
   const [pasteBody, setPasteBody] = useState('');
   const [importTarget, setImportTarget] = useState(EXAM_SET_ID);
   const [dragOver, setDragOver] = useState(false);
+  const [importProgress, setImportProgress] = useState('');
+  const [importError, setImportError] = useState('');
+  const [importBusy, setImportBusy] = useState(false);
   const [filter, setFilter] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const targetId = allowOwnerSets && importTarget === OWNER_BASIL_CS_STATS_ID
@@ -78,24 +82,52 @@ export function Library({
   };
 
   const handleFiles = async (files: FileList | File[]) => {
+    if (importBusy) return;
+    setImportBusy(true);
+    setImportError('');
     const items: ImportItem[] = [];
-    for (const file of Array.from(files)) {
-      const name = file.name.replace(/\.(md|markdown|txt|json)$/i, '');
-      try {
-        const text = await file.text();
-        if (/\.json$/i.test(file.name)) items.push({ title: name, json: text, setId: targetId });
-        else items.push({ title: name, markdown: text, setId: targetId });
-      } catch {
-        items.push({ error: `Could not read ${file.name}` });
+    const destination = targetId;
+    try {
+      for (const file of Array.from(files)) {
+        const name = file.name.replace(/\.(md|markdown|txt|json|pptx)$/i, '');
+        setImportProgress(`Reading ${file.name}…`);
+        try {
+          if (/\.pptx$/i.test(file.name)) {
+            const { pptxToMarkdown } = await import('../lib/pptx-import');
+            const converted = await pptxToMarkdown(file, {
+              fallbackTitle: name,
+              maxMarkdownChars: allowOwnerSets ? 520_000 : 1_800_000,
+              onProgress: ({ slide, slides }) => setImportProgress(`Converting ${file.name}: slide ${slide} of ${slides}…`),
+            });
+            const { cards, figures, skippedFigures } = converted.stats;
+            items.push({
+              title: converted.title,
+              markdown: converted.markdown,
+              setId: destination,
+              summary: `${cards} cards, ${figures} figures${skippedFigures ? ` (${skippedFigures} could not be embedded)` : ''}`,
+            });
+          } else if (/\.(md|markdown|txt|json)$/i.test(file.name)) {
+            const source = await file.text();
+            if (/\.json$/i.test(file.name)) items.push({ title: name, json: source, setId: destination });
+            else items.push({ title: name, markdown: source, setId: destination });
+          } else throw new Error('Choose a .pptx, .md, .txt, or exported .json file.');
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Could not read the file.';
+          items.push({ error: `${file.name}: ${message}` });
+          setImportError(`${file.name}: ${message}`);
+        }
       }
+      if (items.length > 0) onImport(items);
+    } finally {
+      setImportProgress('');
+      setImportBusy(false);
     }
-    if (items.length > 0) onImport(items);
   };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    if (e.dataTransfer.files.length > 0) void handleFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files.length > 0 && !importBusy) void handleFiles(e.dataTransfer.files);
   };
 
   return (
@@ -124,7 +156,7 @@ export function Library({
           <button type="button" className="btn btn-primary" onClick={() => setPasteOpen((v) => !v)}>
             <ClipboardPaste size={16} aria-hidden /> Paste markdown
           </button>
-          <button type="button" className="btn" onClick={() => fileInput.current?.click()}>
+          <button type="button" className="btn" disabled={importBusy} onClick={() => fileInput.current?.click()}>
             <Upload size={16} aria-hidden /> Upload files
           </button>
           <button type="button" className="btn btn-ghost" onClick={onLoadSample}>
@@ -146,7 +178,7 @@ export function Library({
           <input
             ref={fileInput}
             type="file"
-            accept=".md,.markdown,.txt,.json,text/markdown,text/plain,application/json"
+            accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.md,.markdown,.txt,.json,text/markdown,text/plain,application/json"
             multiple
             hidden
             onChange={(e) => {
@@ -180,9 +212,11 @@ export function Library({
         )}
         <p className="drop-hint">
           {targetId === OWNER_BASIL_CS_STATS_ID
-            ? <>…or drop a <code>.md</code> or export <code>.json</code> into the private Basil set.</>
-            : <>…or drop a <code>.md</code> or export <code>.json</code> to replace Exam 1.</>}
+            ? <>…or drop a <code>.pptx</code>, <code>.md</code>, or export <code>.json</code> into the private Basil set.</>
+            : <>…or drop a <code>.pptx</code>, <code>.md</code>, or export <code>.json</code> to replace Exam 1.</>}
         </p>
+        {importProgress && <p className="import-progress" role="status">{importProgress}</p>}
+        {importError && <p className="import-error" role="alert">{importError}</p>}
 
         {pasteOpen && (
           <div className="paste-form fade-in">

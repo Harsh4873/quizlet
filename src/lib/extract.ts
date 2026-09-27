@@ -14,7 +14,7 @@ import { parseMarkdown, plainText } from './markdown';
 export const BLANK = '____';
 
 const MAX_CLOZES = 60;
-const MAX_TERMS = 140;
+const MAX_TERMS = 2_000;
 const MAX_SECTION_CARDS = 24;
 const SEPARATOR_RE = /^\s*(?:[:：]|[—–―]|::|[-=]{1,2})\s*/;
 const DEFINITION_CONNECTOR_RE = /^\s*(?:is|are|means?|refers? to|describes?|represents?|equals?|=)\s+/i;
@@ -256,17 +256,30 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
   const terms: TermCard[] = [];
   const seenTerms = new Map<string, number>();
 
-  const addTerm = (term: string, definition: string, section: string, source: TermSource) => {
+  const addTerm = (
+    term: string,
+    definition: string,
+    section: string,
+    source: TermSource,
+    images?: TermCard['images'],
+  ) => {
     if (terms.length >= MAX_TERMS) return;
-    const key = normalizeKey(term);
-    if (!key) return;
+    const termKey = normalizeKey(term);
+    if (!termKey) return;
     const split = splitFigure(concise(definition));
     const cleanDef = split.definition;
     if (cleanDef.length < 4) return;
+    // Authored Q/A may ask the same prompt for two separate facts. Keep both;
+    // other term sources still collapse repeated definitions by term name.
+    const key = source === 'qa' ? `${termKey}|${normalizeKey(cleanDef)}` : termKey;
     const existing = seenTerms.get(key);
     if (existing !== undefined) {
-      if (cleanDef.length > terms[existing].definition.length) {
-        terms[existing] = { ...terms[existing], definition: cleanDef };
+      if (cleanDef.length > terms[existing].definition.length || (images?.length && !terms[existing].images?.length)) {
+        terms[existing] = {
+          ...terms[existing],
+          definition: cleanDef.length > terms[existing].definition.length ? cleanDef : terms[existing].definition,
+          images: images?.length ? images : terms[existing].images,
+        };
       }
       return;
     }
@@ -278,7 +291,15 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
       section,
       source,
       figure: split.figure,
+      images,
     });
+  };
+
+  const imagesOf = (inlines: Inline[]): TermCard['images'] => {
+    const images = inlines
+      .filter((run): run is Extract<Inline, { kind: 'image' }> => run.kind === 'image')
+      .map((run) => ({ src: run.href, alt: run.text }));
+    return images.length ? images : undefined;
   };
 
   // 1) Bold-start and colon definitions, plus Q/A pairs over adjacent units.
@@ -291,21 +312,21 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
       // "Q: ...? A: ..." on adjacent lines gets merged into one paragraph.
       const inline = q[1].match(/^(.*?[?.!])\s+(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i);
       if (inline) {
-        addTerm(ensureQuestionMark(inline[1]), inline[2].trim(), unit.section, 'qa');
+        addTerm(ensureQuestionMark(inline[1]), inline[2].trim(), unit.section, 'qa', imagesOf(unit.inlines));
         defUnitTexts.add(unit.text);
         continue;
       }
       // Same merge, but the prompt has extra text after ? / . / ! (for example an ASR hint).
       const trailing = q[1].match(/^(.*?)\s+(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i);
       if (trailing && trailing[2].trim().length >= 4) {
-        addTerm(ensureQuestionMark(trailing[1]), trailing[2].trim(), unit.section, 'qa');
+        addTerm(ensureQuestionMark(trailing[1]), trailing[2].trim(), unit.section, 'qa', imagesOf(unit.inlines));
         defUnitTexts.add(unit.text);
         continue;
       }
       const next = units[i + 1];
       const a = next?.text.match(ANSWER_RE);
       if (a) {
-        addTerm(ensureQuestionMark(q[1]), a[1].trim(), unit.section, 'qa');
+        addTerm(ensureQuestionMark(q[1]), a[1].trim(), unit.section, 'qa', imagesOf(next.inlines));
         defUnitTexts.add(unit.text).add(next.text);
         i += 1;
         continue;
@@ -313,13 +334,13 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     }
     const bold = termFromBoldStart(unit);
     if (bold) {
-      addTerm(bold.term, bold.definition, unit.section, 'bold');
+      addTerm(bold.term, bold.definition, unit.section, 'bold', imagesOf(unit.inlines));
       defUnitTexts.add(unit.text);
       continue;
     }
     const colon = termFromColonLine(unit);
     if (colon) {
-      addTerm(colon.term, colon.definition, unit.section, 'colon');
+      addTerm(colon.term, colon.definition, unit.section, 'colon', imagesOf(unit.inlines));
       defUnitTexts.add(unit.text);
     }
   }

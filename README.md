@@ -8,12 +8,15 @@ Quizlet is the owner's exam flashcard app, published at `https://harsh.bet/quizl
 - The vault has two folders: **CSCE 627** (Exam 1) and **Research** (Basil CS/stats).
 - Study modes: **Notes**, **Flashcards**, **Quiz**, **Blanks**, and **Match**.
 - One cumulative Exam 1 deck. Cards still sit under `## Terms`, `## Rules`, `## Theorems`, and `## Examples`, and each card is labeled, but study is the whole deck.
-- Import/export can replace Exam 1 or, when Sync is on, upsert the private Basil set (JSON or markdown).
+- Flashcards filter by card type: **Gym** (Terms, Rules, Theorems) or **Examples** (desk work with paper), taken from the deck's `##` headings.
+- Upload or drop `.pptx`, markdown, or a set export (`.json`) in Library. PPTX conversion runs in the browser and makes multiple cards per slide from bullets, notes, tables, and figures. Imports replace Exam 1 on this device (and in the owner vault if Sync is active), or upsert the private Basil set when owner-vault Sync is active.
 - Optional Sync uses the shared private owner vault (`recall_users/{vaultId}/sets`). On sync it ensures Exam 1 exists, leaves `paper-*` and `owner-*` sets alone, and tombstones other stray flashcard decks. Unapproved Google accounts cannot sync.
 
 ## Privacy boundary
 
 By default generation and storage run in the browser. Turning on **Sync** signs in with a verified, provisioned Google account and resolves it to the shared owner vault. There are no analytics.
+
+PPTX images are embedded in the imported markdown so cards and notes work offline. Large or unsupported images keep their captions and are counted in the import notice. A presentation can be up to 40 MB; the importer reads up to 400 slides. Check the generated cards after import because question wording is generated from slide text with local rules.
 
 ## Local development
 

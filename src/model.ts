@@ -82,6 +82,8 @@ export interface TermCard {
   source: TermSource;
   /** Built-in state diagram id, when the card has a picture. */
   figure?: string;
+  /** Embedded/imported figure from markdown; data URLs stay in the saved set. */
+  images?: Array<{ src: string; alt: string }>;
 }
 
 export interface ClozeCard {

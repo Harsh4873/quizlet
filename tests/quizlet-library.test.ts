@@ -8,7 +8,14 @@ import {
   createOwnerBasilCsStatsSet,
   isOwnerSetId,
 } from '../src/lib/owner-set';
-import { ensureQuizletLibrary, isKeptQuizletSetId, libraryAfterRejectedAccount, libraryOnOpen } from '../src/lib/quizlet-library';
+import {
+  ensureQuizletLibrary,
+  hasExamImportMarker,
+  isKeptQuizletSetId,
+  libraryAfterRejectedAccount,
+  libraryOnOpen,
+  markExamImport,
+} from '../src/lib/quizlet-library';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from '../src/lib/sample';
 import { defaultData, upsertSet } from '../src/lib/store';
 
@@ -199,6 +206,29 @@ describe('ensureQuizletLibrary', () => {
     const exam = next.sets.find((set) => set.id === EXAM_SET_ID);
     expect(exam?.markdown).toBe(EXAM_MARKDOWN);
     expect(exam?.updatedAt).toBeGreaterThan(3);
+  });
+
+  it('preserves an explicitly imported Exam 1 deck through curation', () => {
+    const imported = markExamImport('# Imported\n\nQ: What is ATP?\nA: Cell energy currency.\n');
+    expect(hasExamImportMarker(imported)).toBe(true);
+    const data = upsertSet(defaultData(), {
+      id: EXAM_SET_ID,
+      title: 'Imported lecture',
+      markdown: imported,
+      createdAt: 3,
+      updatedAt: 4,
+    });
+    const next = ensureQuizletLibrary(data, 8000);
+    expect(next.sets.find((set) => set.id === EXAM_SET_ID)).toEqual(data.sets[0]);
+    expect(extractStudyMaterial(imported).terms.some((card) => card.term === 'What is ATP?')).toBe(true);
+  });
+
+  it('adds the import marker inside existing front matter', () => {
+    const imported = markExamImport('---\ntitle: Existing\n---\n\n# Existing\n');
+    expect(imported).toMatch(/^---\nquizlet-import: user\ntitle: Existing\n---\n/);
+    expect(markExamImport(imported)).toBe(imported);
+    const dots = markExamImport('---\ntitle: Existing\n...\n\n# Existing\n');
+    expect(dots).toMatch(/^---\nquizlet-import: user\ntitle: Existing\n---\n/);
   });
 });
 

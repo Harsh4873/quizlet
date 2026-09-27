@@ -19,7 +19,7 @@ import { normalizeKey } from '../lib/extract';
 import { useSpeechInput } from '../lib/speech';
 import { speakableSegments, useReadAloud } from '../lib/readaloud';
 import { copyText } from '../lib/clipboard';
-import { InlineRuns } from './Inline';
+import { InlineRuns, PaperImage } from './Inline';
 import { ExamFigure } from './Machine';
 
 const READING_RATES = [0.75, 1, 1.25, 1.5];
@@ -102,6 +102,7 @@ export function NotesView({ material, markdown, onAddNote }: NotesViewProps) {
                 <div key={term.id} className="glossary-item">
                   <div className="glossary-term">{term.term}</div>
                   <div className="glossary-def">{term.definition}</div>
+                  {term.images?.map((img, i) => <PaperImage key={i} src={img.src} alt={img.alt} />)}
                   {term.figure ? <ExamFigure id={term.figure} /> : null}
                 </div>
               ))}

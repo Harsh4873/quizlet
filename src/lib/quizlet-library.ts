@@ -10,6 +10,23 @@ import { PAPER_PREFIX } from './paper-set';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from './sample';
 import { defaultData, deleteSet, nextDataTimestamp, upsertSet } from './store';
 
+const IMPORT_MARKER = 'quizlet-import: user';
+
+/** An explicit user import survives the bundled Exam 1 fallback on reload and sync. */
+export function markExamImport(markdown: string): string {
+  if (hasExamImportMarker(markdown)) return markdown;
+  const frontMatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/);
+  if (frontMatter) {
+    return markdown.replace(frontMatter[0], `---\n${IMPORT_MARKER}\n${frontMatter[1]}\n---\n`);
+  }
+  return `---\n${IMPORT_MARKER}\n---\n\n${markdown}`;
+}
+
+export function hasExamImportMarker(markdown: string): boolean {
+  const frontMatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/);
+  return Boolean(frontMatter && /^quizlet-import:\s*user\s*$/m.test(frontMatter[1]));
+}
+
 function isPaperSetId(setId: string): boolean {
   return setId.startsWith(PAPER_PREFIX);
 }
@@ -58,8 +75,9 @@ function ensureBasilDeck(data: AppData, now: number): AppData {
 
 /**
  * Quizlet ships Exam 1 and Basil CS/stats. Leave `paper-*` (Research) and
- * other `owner-*` sets alone, including their markdown. Tombstone every other
- * flashcard set so old decks disappear on sync.
+ * other `owner-*` sets alone, including their markdown. An explicitly imported
+ * Exam 1 deck is the only exception to the bundled fallback. Tombstone every
+ * other flashcard set so old decks disappear on sync.
  */
 export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
   let next = data;
@@ -74,7 +92,8 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
   }
 
   const existing = next.sets.find((set) => set.id === EXAM_SET_ID);
-  if (existing && (existing.markdown !== EXAM_MARKDOWN || existing.title !== EXAM_SET_TITLE)) {
+  if (existing && !hasExamImportMarker(existing.markdown)
+    && (existing.markdown !== EXAM_MARKDOWN || existing.title !== EXAM_SET_TITLE)) {
     next = upsertSet(next, {
       ...existing,
       title: EXAM_SET_TITLE,
