@@ -99,12 +99,12 @@ export function Library({
               maxMarkdownChars: allowOwnerSets ? 520_000 : 1_800_000,
               onProgress: ({ slide, slides }) => setImportProgress(`Converting ${file.name}: slide ${slide} of ${slides}…`),
             });
-            const { cards, figures, skippedFigures } = converted.stats;
+            const { cards, clozeCount, figures, skippedFigures } = converted.stats;
             items.push({
               title: converted.title,
               markdown: converted.markdown,
               setId: destination,
-              summary: `${cards} cards, ${figures} figures${skippedFigures ? ` (${skippedFigures} could not be embedded)` : ''}`,
+              summary: `${cards} cards, ${clozeCount} blanks, ${figures} figures${skippedFigures ? ` (${skippedFigures} could not be embedded)` : ''}`,
             });
           } else if (/\.(md|markdown|txt|json)$/i.test(file.name)) {
             const source = await file.text();

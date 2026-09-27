@@ -11,7 +11,7 @@ const RASTER_MIMES: Record<string, string> = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
   webp: 'image/webp', bmp: 'image/bmp',
 };
-const DEDUP_ARTICLES = new Set(['a', 'an', 'the']);
+const DEDUP_FILLERS = new Set(['a', 'an', 'the', 'is', 'are', 'was', 'were', 'its', 'of', 'at', 'in']);
 
 export interface PptxProgress {
   slide: number;
@@ -26,6 +26,11 @@ export interface PptxStats {
   skippedFigures: number;
   notes: number;
   tables: number;
+  tableCards: number;
+  notesCards: number;
+  clozeCount: number;
+  reverseCards: number;
+  skippedAgenda: number;
 }
 
 export interface PptxImportOptions {
@@ -43,11 +48,18 @@ export interface PptxConversion {
 }
 
 interface Paragraph { text: string; level: number }
-interface TextShape { kind: 'text'; paragraphs: Paragraph[]; placeholder: string; y: number }
+interface Position { x: number; y: number; width: number; height: number }
+interface TextShape extends Position { kind: 'text'; paragraphs: Paragraph[]; placeholder: string }
 interface TableShape { kind: 'table'; rows: string[][] }
-interface PictureShape { kind: 'picture'; relId: string; alt: string; y: number }
+interface PictureShape extends Position { kind: 'picture'; relId: string; alt: string }
 type SlideShape = TextShape | TableShape | PictureShape;
-interface Card { question: string; answer: string; image?: { alt: string; url: string } }
+interface Card {
+  question: string;
+  answer: string;
+  source: 'body' | 'table' | 'notes' | 'figure' | 'reverse';
+  image?: { alt: string; url: string };
+  cloze?: { sentence: string; answer: string };
+}
 interface Relationship { target: string; type: string }
 interface ContentTypes { defaults: Map<string, string>; overrides: Map<string, string> }
 
@@ -91,9 +103,16 @@ function paragraphs(body: Element | undefined): Paragraph[] {
     .filter((paragraph) => paragraph.text);
 }
 
-function yPosition(element: Element): number {
+function position(element: Element): Position {
   const xfrm = first(element, A, 'xfrm') ?? first(element, P, 'xfrm');
-  return Number(first(xfrm ?? element, A, 'off')?.getAttribute('y') ?? 0) || 0;
+  const offset = first(xfrm ?? element, A, 'off');
+  const extent = first(xfrm ?? element, A, 'ext');
+  return {
+    x: Number(offset?.getAttribute('x') ?? 0) || 0,
+    y: Number(offset?.getAttribute('y') ?? 0) || 0,
+    width: Number(extent?.getAttribute('cx') ?? 0) || 0,
+    height: Number(extent?.getAttribute('cy') ?? 0) || 0,
+  };
 }
 
 function altText(element: Element): string {
@@ -123,17 +142,17 @@ function readShapes(root: Element): SlideShape[] {
         kind: 'text',
         paragraphs: lines,
         placeholder,
-        y: yPosition(node),
+        ...position(node),
       });
       const embedded = first(node, A, 'blip')?.getAttributeNS(R, 'embed');
-      if (embedded) out.push({ kind: 'picture', relId: embedded, alt, y: yPosition(node) });
+      if (embedded) out.push({ kind: 'picture', relId: embedded, alt, ...position(node) });
     } else if (node.localName === 'graphicFrame') {
       const table = first(node, A, 'tbl');
       if (!table) {
         const alt = altText(node);
-        if (alt) out.push({ kind: 'text', paragraphs: [{ text: alt, level: 0 }], placeholder: '', y: yPosition(node) });
+        if (alt) out.push({ kind: 'text', paragraphs: [{ text: alt, level: 0 }], placeholder: '', ...position(node) });
         const embedded = first(node, A, 'blip')?.getAttributeNS(R, 'embed');
-        if (embedded) out.push({ kind: 'picture', relId: embedded, alt, y: yPosition(node) });
+        if (embedded) out.push({ kind: 'picture', relId: embedded, alt, ...position(node) });
         return;
       }
       const rows = children(table)
@@ -146,7 +165,7 @@ function readShapes(root: Element): SlideShape[] {
       const blip = first(node, A, 'blip');
       const relId = blip?.getAttributeNS(R, 'embed') ?? '';
       const alt = altText(node);
-      if (relId) out.push({ kind: 'picture', relId, alt, y: yPosition(node) });
+      if (relId) out.push({ kind: 'picture', relId, alt, ...position(node) });
     }
   };
   const tree = first(root, P, 'spTree');
@@ -240,79 +259,216 @@ function clean(value: string): string {
   return value.replace(/\s+/g, ' ').replace(/^[-•–]\s*/, '').trim();
 }
 
-function questionForFact(value: string, topic: string): Card | null {
-  const fact = clean(value).replace(/[.;]\s*$/, '');
-  if (fact.length < 12 || !/[a-zA-Z]/.test(fact)) return null;
-  const colon = fact.match(/^([^:：]{2,78})\s*[:：]\s*(.{5,})$/);
-  if (colon && colon[1].split(/\s+/).length <= 9) {
-    return { question: `What is ${clean(colon[1])}?`, answer: clean(colon[2]) };
-  }
-  const definition = fact.match(/^(.{2,75}?)\s+(is|are|means|refers to|describes|represents|consists of|is defined as)\s+(.{5,})$/i);
-  if (definition && definition[1].split(/\s+/).length <= 9) {
-    return { question: `What ${definition[2].toLowerCase() === 'are' ? 'are' : 'is'} ${clean(definition[1])}?`, answer: fact };
-  }
-  const action = fact.match(/^(.{2,65}?)\s+(absorbs|activates|binds|carries|catalyzes|causes|codes|contains|controls|converts|creates|determines|drives|enables|encodes|forms|generates|includes|increases|inhibits|maintains|measures|produces|protects|provides|reduces|regulates|releases|requires|separates|sends|stores|transfers|transmits|uses)\s+(.{3,})$/i);
-  if (action && action[1].split(/\s+/).length <= 7) {
-    const verb = action[2].toLowerCase();
-    const baseVerb = verb.endsWith('ies') ? `${verb.slice(0, -3)}y` : verb.slice(0, -1);
-    return { question: `What does ${clean(action[1])} ${baseVerb}?`, answer: fact };
-  }
-  const lead = fact.split(/\s+/).slice(0, 3).join(' ');
-  return { question: `In ${topic}, what is the point about “${lead}”?`, answer: fact };
+function initialUpper(value: string): string {
+  const normalized = clean(value);
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function cardsFromParagraphs(lines: Paragraph[], topic: string): Card[] {
+function isNoise(value: string): boolean {
+  const line = clean(value);
+  return !/[a-zA-Z]/.test(line)
+    || /^\d+(?:\s*[/|-]\s*\d+)?$/.test(line)
+    || /^(?:click|tap|press)\s+(?:here|to|next|back|the)\b/i.test(line)
+    || /^(?:next|previous|back|home|slide show|insert title|add text|speaker notes)$/i.test(line)
+    || /^(?:©|copyright\b|all rights reserved\b|https?:\/\/|www\.)/i.test(line)
+    || /^(?:logo|university logo|company logo|icon)\s*\d*$/i.test(line);
+}
+
+function clozeForDefinition(term: string, definition: string, verb?: 'is' | 'are'): Card['cloze'] | undefined {
+  const name = clean(term);
+  const detail = clean(definition).replace(/[.;]\s*$/, '');
+  if (name.length < 3 || name.length > 55 || name.split(/\s+/).length > 7
+    || detail.length < 18 || detail.length > 170 || isNoise(detail)
+    || normalizeKey(detail).startsWith(`${normalizeKey(name)} `)) return undefined;
+  const copula = verb ?? (/s$/i.test(name) && !/(?:sis|us|ss)$/i.test(name) ? 'are' : 'is');
+  const sentence = `${name} ${copula} ${detail}.`;
+  return sentence.length >= 30 && sentence.length <= 240 ? { sentence, answer: name } : undefined;
+}
+
+function reverseForDefinition(term: string, definition: string): Card | null {
+  const name = clean(term);
+  const detail = clean(definition).replace(/[.;]\s*$/, '');
+  if (name.length < 3 || name.length > 40 || name.split(/\s+/).length > 5
+    || detail.length < 14 || detail.length > 90 || detail.split(/\s+/).length > 15
+    || normalizeKey(detail).includes(normalizeKey(name)) || isNoise(detail)) return null;
+  return { question: `Which term means “${detail}”?`, answer: name, source: 'reverse' };
+}
+
+function subjectOf(fact: string): string | undefined {
+  const colon = fact.match(/^([^:：]{2,65})\s*[:：]\s*.{5,}$/);
+  if (colon && colon[1].split(/\s+/).length <= 8) return clean(colon[1]);
+  const definition = fact.match(/^(.{2,65}?)\s+(?:is|are|means|refers to|describes|represents)\s+.{5,}$/i);
+  return definition && definition[1].split(/\s+/).length <= 8 ? clean(definition[1]) : undefined;
+}
+
+function questionForFact(value: string, topic: string, source: Card['source'] = 'body'): Card | null {
+  const fact = clean(value).replace(/[.;]\s*$/, '');
+  if (fact.length < 12 || isNoise(fact)) return null;
+  const comparison = fact.match(/^(.{2,45}?)\s+(?:vs\.?|versus)\s+(.{2,45}?)\s*[:—–-]\s*(.{10,})$/i);
+  if (comparison) {
+    return { question: `How do ${clean(comparison[1])} and ${clean(comparison[2])} differ?`, answer: clean(comparison[3]), source };
+  }
+  const colon = fact.match(/^([^:：]{2,78})\s*[:：]\s*(.{5,})$/);
+  if (colon && colon[1].split(/\s+/).length <= 8 && !/^(?:figure|fig\.?|diagram|image|example|exam tip)$/i.test(colon[1])) {
+    const name = clean(colon[1]);
+    const detail = clean(colon[2]);
+    return { question: `What is ${name}?`, answer: detail, source, cloze: clozeForDefinition(name, detail) };
+  }
+  const definition = fact.match(/^(.{2,75}?)\s+(is|are|means|refers to|describes|represents|consists of|is defined as)\s+(.{5,})$/i);
+  if (definition && definition[1].split(/\s+/).length <= 8 && !/^(?:it|this|that|they|these|those)$/i.test(definition[1])) {
+    const name = clean(definition[1]);
+    return {
+      question: `What ${definition[2].toLowerCase() === 'are' ? 'are' : 'is'} ${name}?`,
+      answer: fact, source, cloze: clozeForDefinition(name, clean(definition[3]), definition[2].toLowerCase() === 'are' ? 'are' : 'is'),
+    };
+  }
+  const action = fact.match(/^(.{2,65}?)\s+(absorbs|activates|binds|carries|catalyzes|causes|codes|contains|controls|converts|creates|determines|drives|enables|encodes|forms|generates|includes|increases|inhibits|maintains|measures|produces|protects|provides|reduces|regulates|releases|requires|separates|sends|stores|transfers|transmits|uses)\s+(.{3,})$/i);
+  if (action && action[1].split(/\s+/).length <= 7 && !/^(?:it|this|that|they|these|those)$/i.test(action[1])) {
+    const verb = action[2].toLowerCase();
+    const baseVerb = verb.endsWith('ies') ? `${verb.slice(0, -3)}y` : verb.slice(0, -1);
+    return { question: `What does ${initialUpper(action[1])} ${baseVerb}?`, answer: fact, source };
+  }
+  const pluralAction = fact.match(/^(.{2,65}?)\s+(produce|convert|carry|generate|require|use|contain|release|store|reduce|increase|inhibit|regulate|transfer|bind|create|form|drive)\s+(.{3,})$/i);
+  if (pluralAction && pluralAction[1].split(/\s+/).length <= 7 && !/^(?:it|this|that|they|these|those)$/i.test(pluralAction[1])) {
+    return { question: `What do ${initialUpper(pluralAction[1])} ${pluralAction[2].toLowerCase()}?`, answer: fact, source };
+  }
+  if (fact.split(/\s+/).length < 5 || fact.length < 24) return null;
+  const lead = fact.split(/\s+/).slice(0, 3).join(' ');
+  return { question: `In ${topic}, what is the point about “${lead}”?`, answer: fact, source };
+}
+
+function splitFacts(value: string): string[] {
+  const numbered = value.replace(/\s+(?=\(?\d{1,2}[.)]\s+[A-Za-z])/g, '; ');
+  return numbered
+    .split(/;\s*(?=[A-Za-z(\d])|(?<=[.!?])\s+(?=[A-Z][a-z])/)
+    .map((part) => clean(part.replace(/^\(?\d{1,2}[.)]\s*/, '')))
+    .filter(Boolean);
+}
+
+function isInformativeTableCell(value: string): boolean {
+  return Boolean(value && (!isNoise(value) || /^[-+]?\d+(?:[./]\d+)?(?:%|x)?$/i.test(value)));
+}
+
+function cardsFromParagraphs(lines: Paragraph[], topic: string, source: 'body' | 'notes' = 'body'): Card[] {
   const cards: Card[] = [];
   for (let index = 0; index < lines.length; index++) {
     const value = clean(lines[index].text);
+    if (isNoise(value)) continue;
     const inlineQa = value.match(/^(?:Q|Question)\s*[:.)-]\s*(.+?[?!.])\s+(?:A|Answer)\s*[:.)-]\s*(.+)$/i);
     if (inlineQa) {
-      cards.push({ question: clean(inlineQa[1]), answer: clean(inlineQa[2]) });
+      cards.push({ question: clean(inlineQa[1]), answer: clean(inlineQa[2]), source });
       continue;
     }
     const q = value.match(/^(?:Q|Question)\s*[:.)-]\s*(.+)$/i);
     if (q) {
       const next = lines[index + 1]?.text.match(/^(?:A|Answer)\s*[:.)-]\s*(.+)$/i);
       if (next) {
-        cards.push({ question: clean(q[1]), answer: clean(next[1]) });
+        cards.push({ question: clean(q[1]), answer: clean(next[1]), source });
         index++;
-        continue;
       }
       continue;
     }
     if (/^(?:A|Answer)\s*[:.)-]/i.test(value)) continue;
-    // A short lead followed by an indented explanation is a concept and its definition.
     const following = lines[index + 1];
+    const comparisonLead = value.match(/^(.{2,45}?)\s+(?:vs\.?|versus)\s+(.{2,45})$/i);
+    if (comparisonLead && following?.level > lines[index].level) {
+      const details: string[] = [];
+      const parentLevel = lines[index].level;
+      while (lines[index + 1]?.level > parentLevel) {
+        index++;
+        if (!isNoise(lines[index].text)) details.push(clean(lines[index].text));
+      }
+      if (details.length >= 2) cards.push({
+        question: `How do ${clean(comparisonLead[1])} and ${clean(comparisonLead[2])} differ?`,
+        answer: details.join('; '), source,
+      });
+      else if (details.length === 1) {
+        const card = questionForFact(details[0], `${topic} (${value})`, source);
+        if (card) cards.push(card);
+      }
+      continue;
+    }
     if (value.length <= 65 && !/[.!?;:]$/.test(value) && following
-      && following.level > lines[index].level && following.text.length >= 16) {
-      cards.push({ question: `What is ${value}?`, answer: clean(following.text) });
+      && following.level > lines[index].level && following.text.length >= 16 && !isNoise(following.text)) {
+      const detail = clean(following.text);
+      cards.push({ question: `What is ${value}?`, answer: detail, source, cloze: clozeForDefinition(value, detail) });
+      const reverse = reverseForDefinition(value, detail);
+      if (reverse) cards.push(reverse);
       index++;
       continue;
     }
-    const clauses = value.split(/;\s+(?=[A-Z\p{L}])|(?<=[.!?])\s+(?=[A-Z])/u);
-    for (const clause of clauses) {
-      const card = questionForFact(clause, topic);
+    const tip = source === 'notes' ? value.match(/^(?:exam tip|remember(?: that)?|key point|important)\s*[:：,]?\s*(.+)$/i) : null;
+    if (tip) {
+      for (const clause of splitFacts(clean(tip[1]))) {
+        if (isNoise(clause) || clause.length < 18) continue;
+        const factCard = questionForFact(clause, topic, source);
+        cards.push(factCard && !/^In .+, what is the point about /.test(factCard.question)
+          ? factCard : { question: `What should you remember about ${topic.replace(/[?!.]+$/, '')}?`, answer: clause, source });
+      }
+      continue;
+    }
+    if (/\b(?:vs|versus)\b/i.test(value) && /[:—–-]/.test(value)) {
+      const card = questionForFact(value, topic, source);
       if (card) cards.push(card);
+      continue;
+    }
+    let subject: string | undefined;
+    for (const clause of splitFacts(value)) {
+      const example = clause.match(/^(?:for example|for instance|e\.g\.|example)\s*[,：:]?\s*(.{8,})$/i);
+      if (example) {
+        const detail = clean(example[1]);
+        if (!isNoise(detail)) cards.push({ question: `What is an example of ${subject ?? topic}?`, answer: detail, source });
+        continue;
+      }
+      const card = questionForFact(clause, topic, source);
+      if (!card) continue;
+      cards.push(card);
+      const name = subjectOf(clause);
+      if (name) {
+        subject = name;
+        if (/^What is /.test(card.question)) {
+          const reverse = reverseForDefinition(name, card.answer);
+          if (reverse && /^([^:：]+)[:：]/.test(clause)) cards.push(reverse);
+        }
+      }
     }
   }
   return cards;
 }
 
 function cardsFromTable(rows: string[][], topic: string): Card[] {
-  if (!rows.length) return [];
-  const header = rows[0].map(clean);
-  const namedHeader = /^(?:term|concept|name|type|feature|component|structure|item)$/i.test(header[0] ?? '');
-  const body = namedHeader ? rows.slice(1) : rows;
+  const useful = rows.map((row) => row.map(clean)).filter((row) => {
+    const key = row[0];
+    return Boolean(key && !isNoise(key) && row.slice(1).some(isInformativeTableCell));
+  });
+  if (!useful.length) return [];
+  const header = useful[0];
+  const hasHeader = /^(?:term|concept|name|type|feature|component|structure|item|process|stage|property|criterion|characteristic|parameter|metric|aspect)$/i.test(header[0] ?? '');
+  const body = hasHeader ? useful.slice(1) : useful;
+  if (!body.length) return [];
+  const comparison = hasHeader && header.length >= 3 && /^(?:feature|property|criterion|characteristic|parameter|metric|aspect)$/i.test(header[0]);
   const cards: Card[] = [];
   for (const row of body) {
     const key = clean(row[0] ?? '');
-    const rest = row.slice(1).map(clean).filter(Boolean);
-    if (key && key.length <= 85 && rest.length) {
-      const answer = rest.map((cell, i) => namedHeader && header[i + 1] ? `${header[i + 1]}: ${cell}` : cell).join('; ');
-      cards.push({ question: `What is ${key}?`, answer });
-    } else for (const cell of row) {
-      const card = questionForFact(cell, topic);
-      if (card) cards.push(card);
+    if (!key || key.length > 85 || isNoise(key)) continue;
+    const values = row.slice(1).map((cell, i) => ({ label: clean(header[i + 1] ?? ''), value: clean(cell) }))
+      .filter(({ value }) => isInformativeTableCell(value));
+    if (!values.length) continue;
+    if (comparison && values.length >= 2) {
+      const names = values.map(({ label }) => label).filter(Boolean);
+      const joined = names.length === 2 ? names.join(' and ') : names.join(', ');
+      cards.push({ question: `How do ${joined} compare in ${key}?`, answer: values.map(({ label, value }) => `${label}: ${value}`).join('; '), source: 'table' });
+    } else if (hasHeader && header.length >= 3) {
+      for (const { label, value } of values) {
+        if (!label || label === key) continue;
+        cards.push({ question: `For ${key}, what is ${label.toLowerCase()}?`, answer: value, source: 'table' });
+      }
+    } else {
+      const detail = values[0].value;
+      const card: Card = { question: `What is ${key}?`, answer: detail, source: 'table', cloze: clozeForDefinition(key, detail) };
+      cards.push(card);
+      const reverse = reverseForDefinition(key, detail);
+      if (reverse) cards.push(reverse);
     }
   }
   return cards;
@@ -325,29 +481,57 @@ function noteLines(notes: Document | null): Paragraph[] {
     ? shape.paragraphs : []);
 }
 
-function tokenSimilarity(a: string, b: string): number {
-  const tokens = (value: string) => normalizeKey(value).split(' ')
-    .filter((word) => word && !DEDUP_ARTICLES.has(word));
-  const one = new Set(tokens(a));
-  const two = new Set(tokens(b));
-  if (!one.size || !two.size) return 0;
-  let common = 0;
-  for (const token of one) if (two.has(token)) common++;
-  return common / (one.size + two.size - common);
+function stem(word: string): string {
+  if (word.length <= 4) return word;
+  if (word.endsWith('ies')) return `${word.slice(0, -3)}y`;
+  if (word.endsWith('sses')) return word.slice(0, -2);
+  if (word.endsWith('ing') && word.length > 6) return word.slice(0, -3);
+  if (word.endsWith('ed') && word.length > 5) return word.slice(0, -2);
+  if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+  return word;
 }
 
-function addUnique(cards: Card[], candidate: Card): void {
+function factTokens(value: string): string[] {
+  return normalizeKey(value).split(' ').filter((word) => word && !DEDUP_FILLERS.has(word)).map(stem);
+}
+
+/** Compare ordered content tokens: changing a number, negation, or subject keeps a distinct fact. */
+function nearDuplicate(a: string, b: string): boolean {
+  const one = factTokens(a);
+  const two = factTokens(b);
+  if (!one.length || !two.length) return false;
+  if (one.join(' ') === two.join(' ')) return true;
+  if (Math.min(one.length, two.length) < 5) return false;
+  const shorter = one.length <= two.length ? one : two;
+  const longer = one.length > two.length ? one : two;
+  if (longer.length - shorter.length > 1) return false;
+  let cursor = 0;
+  const extra: string[] = [];
+  for (const token of longer) {
+    if (token === shorter[cursor]) cursor++;
+    else extra.push(token);
+  }
+  return cursor === shorter.length && extra.length === 1
+    && /^(?:also|mainly|primarily|typically|generally)$/.test(extra[0]);
+}
+
+function answerWithoutRepeatedTerm(card: Card): string {
+  const term = card.question.match(/^What (?:is|are) (.+)\?$/i)?.[1];
+  if (!term) return card.answer;
+  const answer = clean(card.answer);
+  const prefix = new RegExp(`^${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*(?::|is|are|means)\\s+`, 'i');
+  return answer.replace(prefix, '');
+}
+
+function addUnique(cards: Card[], candidate: Card): boolean {
   const question = clean(candidate.question).replace(/\?*$/, '?');
   const answer = clean(candidate.answer);
-  if (!question || answer.length < 4) return;
-  if (cards.some((existing) =>
-    normalizeKey(existing.question) === normalizeKey(question)
-      && tokenSimilarity(existing.answer, answer) >= 0.82
-      && ((!existing.image && !candidate.image) || existing.image?.url === candidate.image?.url)
-    || tokenSimilarity(existing.answer, answer) >= 0.94
-      && tokenSimilarity(existing.question, question) >= 0.75
-      && !existing.image && !candidate.image)) return;
+  if (!question || (answer.length < 4 && !(candidate.source === 'reverse' && answer.length >= 2)) || isNoise(answer)) return false;
+  if (cards.some((existing) => nearDuplicate(existing.question, question)
+    && nearDuplicate(answerWithoutRepeatedTerm(existing), answerWithoutRepeatedTerm({ ...candidate, question, answer }))
+    && ((!existing.image && !candidate.image) || existing.image?.url === candidate.image?.url))) return false;
   cards.push({ ...candidate, question, answer });
+  return true;
 }
 
 function escapeMarkdown(value: string): string {
@@ -355,11 +539,42 @@ function escapeMarkdown(value: string): string {
 }
 
 function isAgenda(title: string, body: string[]): boolean {
-  return /^(?:agenda|outline|overview|table of contents|contents|today(?:'s topics)?|topics|(?:learning )?objectives?)$/i.test(title)
-    && body.every((line) => {
-      const item = line.replace(/^\s*\d+[.)]\s*/, '').trim();
-      return item.length < 90 && !/\b(?:is|are|means|because|causes|consists|refers to)\b|[:;]/i.test(item);
-    });
+  const agendaTitle = /^(?:agenda|outline|overview|table of contents|contents|today(?:'s topics)?|topics|(?:learning )?objectives?|roadmap|course plan)$/i.test(title);
+  const items = body.map((line) => line.replace(/^\s*\d+(?:\.\d+)*[.)]?\s*/, '').trim()).filter((line) => !isNoise(line));
+  const indexLike = items.length >= 2 && items.every((item) => item.length < 85
+    && !/\b(?:is|are|means|because|causes|consists|refers to|produces|requires|converts)\b|[:;]/i.test(item));
+  return (agendaTitle && (items.length === 0 || indexLike))
+    || (indexLike && body.length >= 3 && body.every((line) => /^\s*\d+(?:\.\d+)*[.)]?\s+/.test(line)));
+}
+
+function isEnding(title: string): boolean {
+  return /^(?:questions?\??|q\s*&\s*a|thank(?:s| you)(?: for (?:your|listening|watching).*)?|the end|contact(?: information)?|end of presentation)[.!?\s]*$/i.test(title);
+}
+
+function isDecorativePicture(picture: PictureShape): boolean {
+  return picture.width > 0 && picture.height > 0
+    && (picture.width < 300_000 || picture.height < 300_000 || picture.width * picture.height < 250_000 ** 2);
+}
+
+function figureCaption(picture: PictureShape, shapes: TextShape[], used: Set<TextShape>): TextShape | undefined {
+  const candidates = shapes.filter((shape) => {
+    if (used.has(shape) || /^(?:title|ctrTitle)$/i.test(shape.placeholder) || shape.paragraphs.length > 2) return false;
+    const label = shape.paragraphs.map((line) => line.text).join(' ');
+    if (label.length < 12 || label.length > 190 || isNoise(label)) return false;
+    const explicit = /^(?:fig(?:ure)?\.?\s*\d+|diagram\s*\d+|image\s*\d+)\b/i.test(label);
+    const below = shape.y >= picture.y && shape.y <= picture.y + picture.height + 2_000_000;
+    const overlaps = !picture.width || !shape.width
+      || (shape.x < picture.x + picture.width && picture.x < shape.x + shape.width);
+    return (below && overlaps) || (explicit && shapes.length <= 3);
+  });
+  return candidates.sort((a, b) => {
+    const score = (shape: TextShape) => {
+      const explicit = /^(?:fig(?:ure)?\.?\s*\d+|diagram\s*\d+|image\s*\d+)\b/i.test(shape.paragraphs[0].text);
+      const below = Math.max(0, shape.y - picture.y - picture.height);
+      return below + (explicit ? -1_000_000 : 0) + (shape.y < picture.y ? 3_000_000 : 0);
+    };
+    return score(a) - score(b);
+  })[0];
 }
 
 function base64(bytes: Uint8Array): string {
@@ -413,9 +628,14 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
   const mediaTypes = await contentTypes(zip);
 
   const fallback = clean(options.fallbackTitle?.replace(/\.pptx$/i, '').replace(/[_-]+/g, ' ') ?? '') || 'Imported presentation';
-  const stats: PptxStats = { slides: paths.length, skippedSlides: 0, cards: 0, figures: 0, skippedFigures: 0, notes: 0, tables: 0 };
+  const stats: PptxStats = {
+    slides: paths.length, skippedSlides: 0, cards: 0, figures: 0, skippedFigures: 0,
+    notes: 0, tables: 0, tableCards: 0, notesCards: 0, clozeCount: 0,
+    reverseCards: 0, skippedAgenda: 0,
+  };
   const sections: string[] = [];
   const allCards: Card[] = [];
+  const seenClozes = new Set<string>();
   let deckTitle = fallback;
   let titleChosen = false;
   let parentTopic = '';
@@ -438,18 +658,25 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
     const bodyShapes = textShapes.filter((shape) => shape !== titleShape && shape !== fallbackShape);
     const bodyText = bodyShapes.flatMap((shape) => shape.paragraphs.map((p) => p.text));
     const tables = shapes.filter((shape): shape is TableShape => shape.kind === 'table');
-    const pictures = shapes.filter((shape): shape is PictureShape => shape.kind === 'picture');
+    const pictures = shapes.filter((shape): shape is PictureShape => shape.kind === 'picture' && !isDecorativePicture(shape));
     const notesRel = [...rels.values()].find((rel) => rel.type.endsWith('/notesSlide'));
     const notes = noteLines(notesRel ? await xml(zip, notesRel.target) : null);
     if (notes.length) stats.notes++;
     stats.tables += tables.length;
 
-    const agenda = isAgenda(heading, bodyText) && !notes.length && !tables.length && !pictures.length;
-    if (!titleChosen && heading && !agenda) {
+    const agenda = isAgenda(heading, bodyText);
+    const ending = isEnding(heading);
+    if (!titleChosen && heading && !agenda && !ending) {
       deckTitle = heading;
       titleChosen = true;
     }
-    if (agenda) {
+    if (agenda && !notes.length && !tables.length) {
+      stats.skippedSlides++;
+      stats.skippedAgenda++;
+      options.onProgress?.({ slide: index + 1, slides: paths.length });
+      continue;
+    }
+    if (ending && !notes.length && !tables.length) {
       stats.skippedSlides++;
       options.onProgress?.({ slide: index + 1, slides: paths.length });
       continue;
@@ -474,7 +701,7 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
       options.onProgress?.({ slide: index + 1, slides: paths.length });
       continue;
     }
-    if (bodyText.length && bodyText.every((line) => line.length < 25
+    if (bodyText.length && bodyText.every((line) => isNoise(line) || line.length < 25
       && !/\b(?:is|are|means|causes|uses|includes|contains|converts|requires)\b|[:.;]/i.test(line))
       && !notes.length && !tables.length && !pictures.length) {
       stats.skippedSlides++;
@@ -486,25 +713,22 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
     const topic = heading || parentTopic || `Slide ${index + 1}`;
     const section = parentTopic && heading && parentTopic !== heading ? `${parentTopic} — ${heading}` : topic;
     const slideCards: Card[] = [];
-    const bodyLines = bodyShapes
-      .filter((shape) => !pictures.length || !/^(?:fig(?:ure)?\.?\s*\d+|diagram\s*\d+|image\s*\d+)\b/i.test(shape.paragraphs[0].text))
-      .flatMap((shape) => shape.paragraphs);
-    for (const card of cardsFromParagraphs(bodyLines, topic)) addUnique(slideCards, card);
-    for (const table of tables) for (const card of cardsFromTable(table.rows, topic)) addUnique(slideCards, card);
-    for (const card of cardsFromParagraphs(notes, topic)) addUnique(slideCards, card);
-
-    // Captions remain near their figures even when drawing order differs from visual order.
-    const captions = bodyShapes.filter((shape) => shape.paragraphs.length <= 2
-      && /^(?:fig(?:ure)?\.?\s*\d+|diagram\s*\d+|image\s*\d+)\b/i.test(shape.paragraphs[0].text));
     const usedCaptions = new Set<TextShape>();
+    const usedFigureNotes = new Set<Paragraph>();
     for (const [pictureIndex, picture] of pictures.entries()) {
-      const nearest = captions.filter((shape) => !usedCaptions.has(shape))
-        .sort((a, b) => Math.abs(a.y - picture.y) - Math.abs(b.y - picture.y))[0];
-      const matched = nearest && (pictures.length === 1 || Math.abs(nearest.y - picture.y) < 3_500_000)
-        ? nearest : undefined;
+      const matched = figureCaption(picture, bodyShapes, usedCaptions);
       if (matched) usedCaptions.add(matched);
-      const caption = matched?.paragraphs.map((p) => p.text).join(' ') ?? '';
-      const label = clean(caption || picture.alt || `${topic} figure`);
+      const caption = clean(matched?.paragraphs.map((p) => p.text).join(' ') ?? '');
+      const captionNumber = caption.match(/^(?:fig(?:ure)?\.?|diagram|image)\s*(\d+)/i)?.[1];
+      const expectedNumber = captionNumber ?? (pictures.length > 1 ? String(pictureIndex + 1) : undefined);
+      const note = notes.find((line) => !usedFigureNotes.has(line)
+        && /^(?:fig(?:ure)?\.?|diagram|image)\s*\d+\b/i.test(line.text)
+        && (!expectedNumber || new RegExp(`^\\s*(?:fig(?:ure)?\\.?|diagram|image)\\s*${expectedNumber}\\b`, 'i').test(line.text)));
+      if (note) usedFigureNotes.add(note);
+      const noteCaption = clean(note?.text ?? '');
+      const label = clean(caption || noteCaption || picture.alt);
+      const description = [caption, noteCaption, picture.alt].filter((part, i, all) => part && all.indexOf(part) === i).join(' — ');
+      if (!label || isNoise(label) || label.length < 12 || description.length < 12) continue;
       const relationship = rels.get(picture.relId);
       const mediaPath = relationship?.type.endsWith('/image') ? relationship.target : null;
       const mime = mediaPath ? rasterMime(mediaPath, mediaTypes) : undefined;
@@ -512,7 +736,7 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
       if (mediaPath && mime && zip.file(mediaPath)) {
         const data = await zip.file(mediaPath)!.async('uint8array');
         const available = Math.min(350_000, imageBudget - usedImageChars);
-        if (available > 2_000 && (data.length > 500 || caption || picture.alt)) {
+        if (available > 2_000 && (data.length > 500 || caption || noteCaption || picture.alt)) {
           url = await compressedDataUrl(data, mime, available);
         }
       }
@@ -520,28 +744,48 @@ export async function pptxToMarkdown(file: File | ArrayBuffer, options: PptxImpo
         usedImageChars += url.length;
         stats.figures++;
       } else stats.skippedFigures++;
-      if (url || caption || picture.alt) {
-        const figureName = caption.match(/^(?:fig(?:ure)?\.?|diagram|image)\s*\d+/i)?.[0]
-          || `figure ${pictureIndex + 1}`;
-        addUnique(slideCards, {
-          question: `What does ${figureName} in ${topic} show?`,
-          answer: clean([caption, picture.alt].filter((part, i, all) => part && all.indexOf(part) === i).join(' — ')) || label,
-          image: url ? { alt: label, url } : undefined,
-        });
-      }
+      const figureName = caption.match(/^(?:fig(?:ure)?\.?|diagram|image)\s*\d+/i)?.[0]
+        || noteCaption.match(/^(?:fig(?:ure)?\.?|diagram|image)\s*\d+/i)?.[0]
+        || `figure ${pictureIndex + 1}`;
+      addUnique(slideCards, {
+        question: `What does ${figureName} in ${topic} show?`,
+        answer: description,
+        source: 'figure',
+        image: url ? { alt: label, url } : undefined,
+      });
     }
+    const bodyLines = bodyShapes
+      .filter((shape) => !usedCaptions.has(shape) && (!pictures.length
+        || !/^(?:fig(?:ure)?\.?\s*\d+|diagram\s*\d+|image\s*\d+)\b/i.test(shape.paragraphs[0].text)))
+      .flatMap((shape) => shape.paragraphs);
+    for (const card of cardsFromParagraphs(bodyLines, section)) addUnique(slideCards, card);
+    for (const table of tables) for (const card of cardsFromTable(table.rows, topic)) addUnique(slideCards, card);
+    for (const card of cardsFromParagraphs(notes.filter((line) => !usedFigureNotes.has(line)), section, 'notes')) addUnique(slideCards, card);
 
     const uniqueForSection: Card[] = [];
     for (const card of slideCards) {
-      const before = allCards.length;
-      addUnique(allCards, card);
-      if (allCards.length > before) uniqueForSection.push(card);
+      if (addUnique(allCards, card)) {
+        uniqueForSection.push(card);
+        if (card.source === 'table') stats.tableCards++;
+        if (card.source === 'notes') stats.notesCards++;
+        if (card.source === 'reverse') stats.reverseCards++;
+      }
     }
     if (uniqueForSection.length) {
       sections.push(`## ${escapeMarkdown(section)}`);
       for (const card of uniqueForSection) {
         sections.push(`Q: ${escapeMarkdown(card.question)}`);
         sections.push(`A: ${escapeMarkdown(card.answer)}${card.image ? ` ![${clean(card.image.alt).replace(/[\[\]]/g, '')}](${card.image.url})` : ''}`);
+        if (card.cloze && stats.clozeCount < 60) {
+          const clozeKey = normalizeKey(card.cloze.sentence);
+          if (!seenClozes.has(clozeKey)) {
+            seenClozes.add(clozeKey);
+            const marked = card.cloze.sentence.replace(card.cloze.answer, `{{${card.cloze.answer}}}`);
+            sections.push('');
+            sections.push(`Cloze: ${escapeMarkdown(marked)}`);
+            stats.clozeCount++;
+          }
+        }
         sections.push('');
       }
     } else stats.skippedSlides++;

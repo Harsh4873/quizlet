@@ -48,6 +48,7 @@ export function isNonQuestionSection(section: string): boolean {
 
 const QUESTION_RE = /^(?:q|question)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i;
 const ANSWER_RE = /^(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i;
+const EXPLICIT_CLOZE_RE = /^Cloze:\s*(.*?)\{\{([^{}]{2,60})\}\}(.*)$/i;
 const GENERIC_CLOZE_TARGETS = new Set([
   'done', 'state', 'status', 'update', 'updated', 'current', 'currently', 'important',
   'note', 'result', 'results', 'yes', 'no', 'true', 'false', 'running', 'finished',
@@ -141,6 +142,7 @@ function termFromBoldStart(unit: Unit): { term: string; definition: string } | n
 }
 
 function termFromColonLine(unit: Unit): { term: string; definition: string } | null {
+  if (EXPLICIT_CLOZE_RE.test(unit.text)) return null;
   if (unit.inlines[0]?.kind === 'bold') return null; // handled by the bold rule
   if (unit.inlines[0]?.kind === 'link') return null; // usually a linked table of contents entry
   if (!unit.isItem && unit.text.length > 120) return null;
@@ -207,7 +209,7 @@ function firstSectionAnswer(blocks: Block[], headingIndex: number, depth: number
     const block = blocks[index];
     if (block.type === 'heading' && block.depth <= depth) break;
     // Q/A pairs under a heading are already cards; a heading over them is a grouping, not a question.
-    if (block.type === 'para' && (QUESTION_RE.test(block.text) || ANSWER_RE.test(block.text))) continue;
+    if (block.type === 'para' && (QUESTION_RE.test(block.text) || ANSWER_RE.test(block.text) || EXPLICIT_CLOZE_RE.test(block.text))) continue;
     if (block.type === 'para' && block.text.length >= 28) pieces.push(block.text);
     else if (block.type === 'list' && pieces.length === 0) {
       pieces.push(...block.items.slice(0, 3).map((item) => item.text));
@@ -268,7 +270,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     if (!termKey) return;
     const split = splitFigure(concise(definition));
     const cleanDef = split.definition;
-    if (cleanDef.length < 4) return;
+    if (cleanDef.length < 4 && !(source === 'qa' && /^[A-Z0-9]{2,4}$/.test(cleanDef))) return;
     // Authored Q/A may ask the same prompt for two separate facts. Keep both;
     // other term sources still collapse repeated definitions by term name.
     const key = source === 'qa' ? `${termKey}|${normalizeKey(cleanDef)}` : termKey;
@@ -307,6 +309,10 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
   for (let i = 0; i < units.length; i++) {
     const unit = units[i];
     if (isNonStudySection(unit.section)) continue;
+    if (EXPLICIT_CLOZE_RE.test(unit.text)) {
+      defUnitTexts.add(unit.text);
+      continue;
+    }
     const q = unit.text.match(QUESTION_RE);
     if (q) {
       // "Q: ...? A: ..." on adjacent lines gets merged into one paragraph.
@@ -395,6 +401,15 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     seenClozes.add(key);
     clozes.push({ id: hashId(`cloze|${key}|${normalizeKey(target)}`), prompt, answer: target, section });
   };
+
+  // Imported decks may ask for a deliberate blank alongside the Q/A card.
+  // The marked word is visible in Notes and becomes the answer in Blanks/Quiz.
+  for (const unit of units) {
+    if (isNonStudySection(unit.section)) continue;
+    const authored = unit.text.match(EXPLICIT_CLOZE_RE);
+    if (!authored) continue;
+    addCloze(`${authored[1]}${authored[2]}${authored[3]}`, authored[2], unit.section);
+  }
 
   for (const unit of units) {
     if (defUnitTexts.has(unit.text) || isNonStudySection(unit.section)) continue;

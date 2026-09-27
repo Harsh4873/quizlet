@@ -76,7 +76,16 @@ export function buildQuiz(terms: TermCard[], clozes: ClozeCard[], opts: QuizOpti
   const questions: QuizQuestion[] = [];
   const termPool = terms.map((term) => term.term);
   const definitionPool = terms.map((term) => term.definition);
-  const answerPool = [...new Set([...clozes.map((c) => c.answer), ...terms.map((t) => t.term)])];
+  const answerPool = [...new Set([
+    ...clozes.map((c) => c.answer),
+    ...terms.flatMap((term) => {
+      if (!/[?？]$/.test(term.term) && term.source !== 'section') return [term.term];
+      // Q/A imports put a full question in `term`; short answers can still
+      // supply plausible blank choices without turning prompts into options.
+      return term.definition.length <= 40 && term.definition.split(/\s+/).length <= 5
+        && !/[?？]$/.test(term.definition) ? [term.definition] : [];
+    }),
+  ])];
   const candidates: Array<{ type: 'term'; card: TermCard; index: number } | { type: 'cloze'; card: ClozeCard }> = [
     ...(terms.length >= 4 ? pickedTerms.map((card, index) => ({ type: 'term' as const, card, index })) : []),
     ...(answerPool.length >= 4 ? pickedClozes.map((card) => ({ type: 'cloze' as const, card })) : []),

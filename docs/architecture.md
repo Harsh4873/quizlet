@@ -6,7 +6,7 @@ Flashcard extraction and study modes were transported from Research (Recall). Pa
 
 ## Presentation import
 
-Library lazy-loads `src/lib/pptx-import.ts` for `.pptx` uploads and drops. In the browser, JSZip reads OOXML slide order, shapes, notes, tables, image relationships, and media. The converter builds topic-grouped Q/A markdown, deduplicates cards, and embeds supported figures as bounded data URLs. `extractStudyMaterial` retains those image URLs on cards; Notes and Flashcards render them. Unsupported or oversized artwork keeps its caption/alt text. No presentation text or image is generated into the static bundle.
+Library lazy-loads `src/lib/pptx-import.ts` for `.pptx` uploads and drops. In the browser, JSZip reads OOXML slide order, shapes, notes, tables, image relationships, and media. The converter skips agendas and decorative art, threads divider topics into later slides, splits compound bullets, mines notes, pairs table headers with cells, and matches figures to nearby captions. It emits deduplicated Q/A markdown plus marked `Cloze: {{answer}} ...` lines for clear definitions. `extractStudyMaterial` turns those lines into Blanks and Quiz cards, and retains bounded figure data URLs on Q/A cards; Notes and Flashcards render images. Unsupported or oversized artwork keeps its caption/alt text. No presentation text or image is generated into the static bundle.
 
 Explicit user imports into Exam 1 carry a `quizlet-import: user` front-matter marker. `ensureQuizletLibrary` preserves those imports across reload and owner-vault sync while still restoring the bundled deck for missing or stale unmarked Exam 1 copies. Basil imports require an active owner-vault Sync session. Firestore rules and set ids are unchanged.
 
