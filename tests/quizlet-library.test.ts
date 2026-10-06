@@ -17,7 +17,7 @@ import {
   markExamImport,
 } from '../src/lib/quizlet-library';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from '../src/lib/sample';
-import { defaultData, upsertSet } from '../src/lib/store';
+import { defaultData, loadAccountData, memoryStorage, saveAccountData, upsertSet } from '../src/lib/store';
 
 describe('signed-out and rejected accounts', () => {
   it('opens with no cards when nobody is signed in', () => {
@@ -220,6 +220,10 @@ describe('ensureQuizletLibrary', () => {
     });
     const next = ensureQuizletLibrary(data, 8000);
     expect(next.sets.find((set) => set.id === EXAM_SET_ID)).toEqual(data.sets[0]);
+    const storage = memoryStorage();
+    saveAccountData('test-vault', next, storage);
+    const reopened = ensureQuizletLibrary(loadAccountData('test-vault', storage), 9000);
+    expect(reopened.sets.find(set => set.id === EXAM_SET_ID)).toEqual(data.sets[0]);
     expect(extractStudyMaterial(imported).terms.some((card) => card.term === 'What is ATP?')).toBe(true);
   });
 
