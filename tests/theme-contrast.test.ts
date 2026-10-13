@@ -46,6 +46,11 @@ describe('light theme contrast', () => {
     expect(contrast(token('--green'), blend(token('--green'), bg, 0.12))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(token('--amber'), panel)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(token('--amber'), blend(token('--amber'), bg, 0.12))).toBeGreaterThanOrEqual(4.5);
+    // Still learning and a wrong option use the red tint over the page. Errors are red on the page.
+    expect(contrast(token('--red'), bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(token('--red'), blend(token('--red'), bg, 0.1))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(token('--red'), blend(token('--red'), panel, 0.1))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast('#ffffff', token('--red'))).toBeGreaterThanOrEqual(4.5);
     // The card back fades into the accent tint. The section label is muted text.
     expect(contrast(token('--muted'), blend(token('--accent'), bg, 0.12))).toBeGreaterThanOrEqual(4.5);
   });

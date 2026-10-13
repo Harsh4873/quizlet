@@ -61,14 +61,14 @@ export function checkSyncAccount(
     return {
       ok: false,
       problem: 'missing-email',
-      message: 'This Google account has no email address, so Research cannot create a private synced workspace.',
+      message: 'This Google account has no email address, so Quizlet cannot create a private synced workspace.',
     };
   }
   if (!emailVerified) {
     return {
       ok: false,
       problem: 'unverified-email',
-      message: `Verify ${signedIn} with Google before syncing Research.`,
+      message: `Verify ${signedIn} with Google before syncing Quizlet.`,
     };
   }
   const googleSession = signInProvider === 'google.com';
@@ -76,7 +76,7 @@ export function checkSyncAccount(
     return {
       ok: false,
       problem: 'non-google-provider',
-      message: 'Research syncs only sessions signed in with Google. Sign in again with the Google button.',
+      message: 'Quizlet syncs only sessions signed in with Google. Sign in again with the Google button.',
     };
   }
   return { ok: true };
@@ -355,7 +355,7 @@ export function describeSyncError(code: string): string {
     case 'resource-exhausted':
       return 'Firestore is rate limiting this account. Sync will slow down and try again.';
     case 'failed-precondition':
-      return 'Firestore could not use this browser session. Close other tabs of Research and try again.';
+      return 'Firestore could not use this browser session. Close other tabs of Quizlet and try again.';
     default:
       return `Sync failed (${bareCode(code) || 'unknown error'}). Retrying…`;
   }

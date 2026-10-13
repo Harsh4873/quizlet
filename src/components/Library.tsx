@@ -310,9 +310,11 @@ export function Library({
                     <button type="button" className="icon-btn" onClick={() => onExport(set)} aria-label={`Export ${set.title}`} title="Export as JSON">
                       <Download size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-btn icon-btn-danger" onClick={() => onDelete(set)} aria-label={`Remove ${set.title}`} title="Remove set">
-                      <Trash2 size={16} aria-hidden />
-                    </button>
+                    {set.id !== EXAM_SET_ID && (
+                      <button type="button" className="icon-btn icon-btn-danger" onClick={() => onDelete(set)} aria-label={`Remove ${set.title}`} title="Remove set">
+                        <Trash2 size={16} aria-hidden />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

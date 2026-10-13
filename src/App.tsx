@@ -33,6 +33,7 @@ import {
   libraryAfterRejectedAccount,
   libraryOnOpen,
   markExamImport,
+  offlineLibraryWrite,
 } from './lib/quizlet-library';
 import {
   OWNER_BASIL_CS_STATS_ID,
@@ -176,13 +177,17 @@ export default function App() {
   };
 
   const disableSync = async () => {
+    const accountId = activeAccountRef.current;
+    const current = dataRef.current;
+    if (offlineLibraryWrite(accountId, current) === 'account' && accountId) {
+      saveAccountData(accountId, current);
+    }
     ownerReadyRef.current = false;
     setOwnerReady(false);
     setSyncFlag(false);
     syncStatusRef.current = { state: 'off' };
     setSyncStatus({ state: 'off' });
     await cloudRef.current?.signOut();
-    setData((current) => libraryAfterRejectedAccount(current));
   };
 
   useEffect(() => {
@@ -204,7 +209,10 @@ export default function App() {
 
   useEffect(() => {
     if (!ownerReadyRef.current) {
-      if (!activeAccountRef.current) saveData({ ...defaultData(), theme: data.theme });
+      const accountId = activeAccountRef.current;
+      const write = offlineLibraryWrite(accountId, data);
+      if (write === 'theme-only') saveData({ ...defaultData(), theme: data.theme });
+      else if (write === 'account' && accountId) saveAccountData(accountId, data);
       return;
     }
     const uid = activeAccountRef.current;

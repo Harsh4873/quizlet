@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Check, RotateCcw, X } from 'lucide-react';
-import type { SetProgress, StudyMaterial } from '../model';
+import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { buildQuiz, type QuizQuestion } from '../lib/questions';
 import { weakCardIds } from '../lib/store';
 import { EmptyModeNote } from './Flashcards';
+import { ExamFigure } from './Machine';
 
 interface QuizViewProps {
   material: StudyMaterial;
@@ -121,6 +122,7 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
                 <div className="missed-a">
                   <Check size={14} aria-hidden /> {a.question.options[a.question.answerIndex]}
                 </div>
+                <LockedAnswerMedia term={material.terms.find((term) => term.id === a.question.cardId)} />
               </div>
             ))}
           </div>
@@ -187,9 +189,6 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
       <div className="quiz-question">
         <div className="question-kind">{kindLabel}</div>
         <div className={`question-prompt ${question.kind === 'cloze' ? 'question-cloze' : ''}`}>{question.prompt}</div>
-        {asked?.images?.map((img, i) => (
-          <img className="quiz-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
-        ))}
       </div>
 
       <div className="options-list" role="listbox" aria-label="Answer options">
@@ -211,6 +210,8 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
         })}
       </div>
 
+      {picked !== null && <LockedAnswerMedia term={asked} />}
+
       {picked !== null && (
         <div className="quiz-next-row fade-in">
           <span className={picked === question.answerIndex ? 'feedback-correct' : 'feedback-wrong'}>
@@ -221,6 +222,21 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Diagrams and imported figures belong to the answer, so they stay hidden until the choice is locked. */
+function LockedAnswerMedia({ term }: { term?: TermCard }) {
+  if (!term) return null;
+  const images = term.images ?? [];
+  if (!term.figure && images.length === 0) return null;
+  return (
+    <div className="quiz-answer-media">
+      {term.figure ? <ExamFigure id={term.figure} /> : null}
+      {images.map((img, i) => (
+        <img className="quiz-import-image" src={img.src} alt={img.alt} key={`${img.src}:${i}`} loading="lazy" />
+      ))}
     </div>
   );
 }

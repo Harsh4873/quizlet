@@ -378,4 +378,17 @@ describe('checkSyncAccount', () => {
     expect(checkSyncAccount('owner@example.test', true, undefined).problem)
       .toBe('non-google-provider');
   });
+
+  it('names Quizlet when the session cannot sync', () => {
+    const messages = [
+      checkSyncAccount(null, true, 'google.com').message,
+      checkSyncAccount('someone@school.test', false, 'google.com').message,
+      checkSyncAccount('owner@example.test', true, 'password').message,
+      describeSyncError('failed-precondition'),
+    ];
+    for (const message of messages) {
+      expect(message).toMatch(/Quizlet/);
+      expect(message).not.toMatch(/Research/);
+    }
+  });
 });

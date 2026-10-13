@@ -8,6 +8,7 @@ export interface SpeechSegment {
 }
 
 const SENTENCE_SPLIT = /(?<=[.!?…])\s+(?=["'“(\[A-Z0-9])/;
+const FIGURE_MARKER = /\[\[fig:[a-z0-9-]+\]\]/g;
 
 /** Split prose into sentence-sized pieces so utterances stay short. */
 export function splitSentences(text: string): string[] {
@@ -66,14 +67,18 @@ function collectListText(list: Extract<Block, { type: 'list' }>, out: string[]) 
 export function speakableSegments(blocks: Block[]): SpeechSegment[] {
   const segments: SpeechSegment[] = [];
   const push = (blockIndex: number, text: string) => {
-    for (const sentence of splitSentences(text)) segments.push({ blockIndex, text: sentence });
+    for (const sentence of splitSentences(text.replace(FIGURE_MARKER, ' '))) {
+      segments.push({ blockIndex, text: sentence });
+    }
   };
 
   blocks.forEach((block, blockIndex) => {
     switch (block.type) {
-      case 'heading':
-        if (block.text.trim()) segments.push({ blockIndex, text: block.text.trim() });
+      case 'heading': {
+        const heading = block.text.replace(FIGURE_MARKER, ' ').replace(/\s+/g, ' ').trim();
+        if (heading) segments.push({ blockIndex, text: heading });
         break;
+      }
       case 'para':
         push(blockIndex, block.text);
         break;

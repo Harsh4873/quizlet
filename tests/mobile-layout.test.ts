@@ -50,6 +50,10 @@ describe('flashcards on a phone', () => {
     expect(declarations('.flashcard', phone)).toMatch(/height:\s*min\(\d+dvh/);
   });
 
+  it('keeps the place line on figure cards', () => {
+    expect(declarations('.flashcard.has-figure .face-section', css)).not.toMatch(/display:\s*none/);
+  });
+
   it('caps figure cards with the same phone height', () => {
     const rule = declarations('.flashcard.has-figure', phone);
     expect(rule).toMatch(/min-height:\s*320px/);

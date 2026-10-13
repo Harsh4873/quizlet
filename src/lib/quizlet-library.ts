@@ -47,6 +47,18 @@ export function libraryAfterRejectedAccount(data: AppData): AppData {
   return { ...defaultData(), theme: data.theme };
 }
 
+/**
+ * Sync is off. Keep the account cache current while the in-memory library
+ * still has sets. Skip the write after a rejected account has emptied it, so
+ * that blank library cannot replace the cache. With no account id, only the
+ * theme belongs in the signed-out cache.
+ */
+export function offlineLibraryWrite(accountId: string | null, data: AppData): 'account' | 'theme-only' | 'skip' {
+  if (!accountId) return 'theme-only';
+  if (data.sets.length > 0) return 'account';
+  return 'skip';
+}
+
 export function clearSetTombstone(data: AppData, setId: string): AppData {
   if (data.tombstones[setId] === undefined) return data;
   const { [setId]: _removed, ...tombstones } = data.tombstones;

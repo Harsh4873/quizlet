@@ -57,6 +57,18 @@ describe('speakableSegments', () => {
     expect(segments.some((s) => s.text === 'Quoted wisdom here.')).toBe(true);
   });
 
+  it('does not read a figure marker out loud', () => {
+    const doc = parseMarkdown(
+      'Accepted strings end in 1. [[fig:even-ones]]\n\n- A second fact. [[fig:nfa-ends1]]\n',
+    );
+    const text = speakableSegments(doc.blocks).map((segment) => segment.text).join(' ');
+    expect(text).toContain('Accepted strings end in 1.');
+    expect(text).toContain('A second fact.');
+    expect(text).not.toContain('[[fig:');
+    expect(text).not.toContain('even-ones');
+    expect(text).not.toContain('nfa-ends1');
+  });
+
   it('produces nothing for a code-only document', () => {
     const doc = parseMarkdown('```\njust code\n```\n');
     expect(speakableSegments(doc.blocks)).toEqual([]);

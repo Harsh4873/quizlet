@@ -15,6 +15,7 @@ import {
   libraryAfterRejectedAccount,
   libraryOnOpen,
   markExamImport,
+  offlineLibraryWrite,
 } from '../src/lib/quizlet-library';
 import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from '../src/lib/sample';
 import { defaultData, loadAccountData, memoryStorage, saveAccountData, upsertSet } from '../src/lib/store';
@@ -56,6 +57,19 @@ describe('signed-out and rejected accounts', () => {
     expect(cleared.sets).toEqual([]);
     expect(cleared.progress).toEqual({});
     expect(cleared.theme).toBe('light');
+  });
+
+  it('keeps writing an account cache while sync is off and the library still has sets', () => {
+    const saved = upsertSet(defaultData(), {
+      id: EXAM_SET_ID,
+      title: EXAM_SET_TITLE,
+      markdown: EXAM_MARKDOWN,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    expect(offlineLibraryWrite('vault-1', saved)).toBe('account');
+    expect(offlineLibraryWrite('vault-1', libraryAfterRejectedAccount(saved))).toBe('skip');
+    expect(offlineLibraryWrite(null, saved)).toBe('theme-only');
   });
 });
 
