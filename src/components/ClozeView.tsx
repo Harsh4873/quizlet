@@ -34,7 +34,7 @@ export function ClozeView({ material, progress, onAnswer }: ClozeViewProps) {
 
   if (material.clozes.length === 0) {
     return (
-      <EmptyModeNote text="No fill-in-the-blank sentences were found. Bold the key phrases in your prose (like **this**) and they will be blanked out." />
+      <EmptyModeNote text="No fill-in-the-blank sentences are in this set. Bold phrases in prose become blanks. Question and answer lines stay on Flashcards and Quiz." />
     );
   }
 

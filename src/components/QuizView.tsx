@@ -26,6 +26,7 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answered, setAnswered] = useState<Answered[]>([]);
+  const [weakNote, setWeakNote] = useState('');
 
   const allIds = useMemo(
     () => [...material.terms.map((t) => t.id), ...material.clozes.map((c) => c.id)],
@@ -39,7 +40,14 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   }
 
   const start = (ids?: Set<string>) => {
-    const cardIds = ids ?? (weakOnly ? weakCardIds(progress, allIds) : undefined);
+    const weakIds = weakOnly ? weakCardIds(progress, allIds) : undefined;
+    if (!ids && weakOnly && weakIds && weakIds.size === 0) {
+      setWeakNote('Nothing is weak right now. Every card in this set is mastered.');
+      setPhase('setup');
+      return;
+    }
+    setWeakNote('');
+    const cardIds = ids ?? weakIds;
     const built = buildQuiz(material.terms, material.clozes, {
       count: length,
       seed: (Date.now() % 2147483647) || 1,
@@ -74,11 +82,19 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
           </div>
         </div>
         <label className="setup-row check-row">
-          <input type="checkbox" checked={weakOnly} onChange={(e) => setWeakOnly(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={weakOnly}
+            onChange={(e) => {
+              setWeakOnly(e.target.checked);
+              if (!e.target.checked) setWeakNote('');
+            }}
+          />
           <span>
             Focus weak cards only{weakCount > 0 ? ` (${weakCount})` : ''}
           </span>
         </label>
+        {weakNote && <p className="quiz-sub" role="status">{weakNote}</p>}
         <button type="button" className="btn btn-primary btn-lg" onClick={() => start()}>
           Start quiz
         </button>
@@ -131,11 +147,14 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   }
 
   const question = questions[index];
+  const asked = material.terms.find((term) => term.id === question.cardId);
   const kindLabel =
     question.kind === 'def-to-term'
       ? 'Which term matches this definition?'
       : question.kind === 'term-to-def'
-        ? 'What does this term mean?'
+        ? (asked?.source === 'qa' || asked?.source === 'section'
+          ? 'Which answer matches this question?'
+          : 'What does this term mean?')
         : 'Fill in the blank';
 
   const pick = (optionIndex: number) => {
@@ -168,7 +187,7 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
       <div className="quiz-question">
         <div className="question-kind">{kindLabel}</div>
         <div className={`question-prompt ${question.kind === 'cloze' ? 'question-cloze' : ''}`}>{question.prompt}</div>
-        {material.terms.find((term) => term.id === question.cardId)?.images?.map((img, i) => (
+        {asked?.images?.map((img, i) => (
           <img className="quiz-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
         ))}
       </div>

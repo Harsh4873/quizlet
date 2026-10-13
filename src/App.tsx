@@ -255,7 +255,9 @@ export default function App() {
     let importedId: string | null = null;
     let importedTitle = EXAM_SET_TITLE;
     let importedSummary = '';
+    let batchNote = '';
     for (const item of items) {
+      if (item.note) batchNote = item.note;
       if (item.error) {
         errors.push(item.error);
         continue;
@@ -302,9 +304,18 @@ export default function App() {
     const curated = ensureQuizletLibrary(next);
     dataRef.current = curated;
     setData(curated);
-    if (errors.length > 0) setNotice(errors[0]);
-    else if (importedId) {
-      setNotice(`${importedId === EXAM_SET_ID ? 'Updated Exam 1' : `Updated ${importedTitle}`}.${importedSummary ? ` ${importedSummary}.` : ''}`);
+    const savedLabel = importedId === EXAM_SET_ID ? 'Exam 1' : importedTitle;
+    const summary = importedSummary ? ` ${importedSummary}.` : '';
+    let notice = '';
+    if (errors.length > 0 && importedId) notice = `${errors[0]} ${savedLabel} was still updated.${summary}`;
+    else if (errors.length > 0) notice = errors[0];
+    else if (importedId) notice = `Updated ${savedLabel}.${summary}`;
+    if (notice && batchNote) {
+      const base = /[.!?]$/.test(notice.trim()) ? notice.trim() : `${notice.trim()}.`;
+      notice = `${base} ${batchNote}.`;
+    }
+    if (notice) setNotice(notice);
+    if (importedId) {
       if (importedId === EXAM_SET_ID) openCards();
       else openSetCards(importedId);
     }
@@ -373,7 +384,8 @@ export default function App() {
   const saveMarkdown = (set: StudySet) => (markdown: string) => {
     setData((d) => {
       const current = d.sets.find((candidate) => candidate.id === set.id) ?? set;
-      return upsertSet(d, { ...current, markdown, updatedAt: nextDataTimestamp(d) });
+      const nextMarkdown = current.id === EXAM_SET_ID ? markExamImport(markdown) : markdown;
+      return upsertSet(d, { ...current, markdown: nextMarkdown, updatedAt: nextDataTimestamp(d) });
     });
   };
 
@@ -382,7 +394,8 @@ export default function App() {
     const markdown = `${set.markdown.trimEnd()}${heading}\n\n${note.trim()}\n`;
     setData((d) => {
       const current = d.sets.find((candidate) => candidate.id === set.id) ?? set;
-      return upsertSet(d, { ...current, markdown, updatedAt: nextDataTimestamp(d) });
+      const nextMarkdown = current.id === EXAM_SET_ID ? markExamImport(markdown) : markdown;
+      return upsertSet(d, { ...current, markdown: nextMarkdown, updatedAt: nextDataTimestamp(d) });
     });
     setNotice('Note added. Your study material has been refreshed.');
   };

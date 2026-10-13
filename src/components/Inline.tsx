@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ImageOff } from 'lucide-react';
 import type { Inline } from '../model';
 import { normalizeKey } from '../lib/extract';
+import { safeImageHref, safeLinkHref } from '../lib/markdown';
 
 interface InlineRunsProps {
   runs: Inline[];
@@ -55,14 +56,17 @@ export function autoLink(text: string, keyPrefix: string): ReactNode[] {
  * link rather than to a broken image.
  */
 export function PaperImage({ src, alt }: { src: string; alt: string }) {
+  const safeSrc = safeImageHref(src);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  if (!safeSrc) return alt ? <span>{alt}</span> : null;
 
   if (failed) {
     return (
       <span className="figure-fallback">
         <ImageOff size={15} aria-hidden />
-        <a href={src} target="_blank" rel="noreferrer noopener">
+        <a href={safeSrc} target="_blank" rel="noreferrer noopener">
           {alt ? `${alt} — open the image` : 'Open the image'}
         </a>
       </span>
@@ -71,8 +75,8 @@ export function PaperImage({ src, alt }: { src: string; alt: string }) {
 
   return (
     <span className="figure-wrap" data-loaded={loaded}>
-      <a href={src} target="_blank" rel="noreferrer noopener" title="Open the full-size image">
-        <img src={src} alt={alt} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+      <a href={safeSrc} target="_blank" rel="noreferrer noopener" title="Open the full-size image">
+        <img src={safeSrc} alt={alt} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
       </a>
     </span>
   );
@@ -95,14 +99,20 @@ export function InlineRuns({ runs, termKeys }: InlineRunsProps) {
             return <em key={i}>{autoLink(run.text, `i${i}`)}</em>;
           case 'code':
             return <code key={i}>{run.text}</code>;
-          case 'link':
+          case 'link': {
+            const href = safeLinkHref(run.href);
+            if (!href) return <span key={i}>{run.text}</span>;
             return (
-              <a key={i} href={run.href} target="_blank" rel="noreferrer noopener">
+              <a key={i} href={href} target="_blank" rel="noreferrer noopener">
                 {run.text}
               </a>
             );
-          case 'image':
-            return <PaperImage key={i} src={run.href} alt={run.text} />;
+          }
+          case 'image': {
+            const href = safeImageHref(run.href);
+            if (!href) return <span key={i}>{run.text}</span>;
+            return <PaperImage key={i} src={href} alt={run.text} />;
+          }
           default:
             return <span key={i}>{autoLink(run.text, `t${i}`)}</span>;
         }

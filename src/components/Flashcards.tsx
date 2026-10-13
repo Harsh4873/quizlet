@@ -21,6 +21,14 @@ function textSizeClass(text: string): string {
   return '';
 }
 
+function shortcutTargetIsControl(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'A') return true;
+  return tag === 'BUTTON' && !target.classList.contains('flashcard');
+}
+
 export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0 }: FlashcardsProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const [termFirst, setTermFirst] = useState(true);
@@ -86,7 +94,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (shortcutTargetIsControl(e.target)) return;
       if (done || !card) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
@@ -205,6 +213,11 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
           onPointerDown={(event) => {
             if (event.button !== 0) return;
             drag.current = { x: event.clientX, y: event.clientY, pointing: true };
+            try {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {
+              /* Pointer up on the card still ends the gesture. */
+            }
           }}
           onPointerMove={(event) => {
             if (!drag.current.pointing) return;
@@ -230,11 +243,16 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
             drag.current.pointing = false;
             setOffset(0);
           }}
+          onLostPointerCapture={() => {
+            if (!drag.current.pointing) return;
+            drag.current.pointing = false;
+            setOffset(0);
+          }}
         >
           {offset > 28 ? <span className="swipe-stamp swipe-yes">Got it</span> : null}
           {offset < -28 ? <span className="swipe-stamp swipe-no">Still learning</span> : null}
           <span className="flashcard-inner">
-            <span className="flashcard-face flashcard-front">
+            <span className="flashcard-face flashcard-front" aria-hidden={flipped || undefined}>
               <span className="face-label">{frontLabel}</span>
               <span className={`face-text ${textSizeClass(frontText)}`}>{frontText}</span>
               {!termFirst && card.images?.map((img, i) => (
@@ -242,7 +260,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
               ))}
               <span className="face-hint">Tap to flip</span>
             </span>
-            <span className="flashcard-face flashcard-back">
+            <span className="flashcard-face flashcard-back" aria-hidden={!flipped || undefined}>
               <span className="face-label">{backLabel}</span>
               <span className={`face-text ${card.figure || card.images?.length ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
               {termFirst && card.images?.map((img, i) => (

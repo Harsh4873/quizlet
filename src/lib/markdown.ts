@@ -33,6 +33,30 @@ export function plainText(inlines: Inline[]): string {
     .trim();
 }
 
+const LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+const RASTER_DATA_RE = /^data:image\/(?:png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/]+={0,2}$/i;
+
+/** Links the notes renderer may put in an href. */
+export function safeLinkHref(href: string): string | null {
+  const trimmed = href.trim();
+  if (!trimmed || trimmed.startsWith('//') || /[\u0000-\u001F\u007F]/.test(trimmed)) return null;
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (!LINK_PROTOCOLS.has(url.protocol)) return null;
+  return trimmed;
+}
+
+/** Image sources: http(s) links, or the raster data URLs the PPTX import writes. */
+export function safeImageHref(href: string): string | null {
+  const compact = href.trim().replace(/\s+/g, '');
+  if (RASTER_DATA_RE.test(compact)) return compact;
+  return safeLinkHref(href.trim());
+}
+
 /** Parse inline markdown (bold, italic, code, links, images) into typed runs. */
 export function parseInlines(src: string): Inline[] {
   const out: Inline[] = [];
@@ -86,7 +110,8 @@ export function parseInlines(src: string): Inline[] {
         flush();
         // Keep the target: a paper's figures are published as images, and the
         // renderer needs the URL to show one (or to link it when it fails).
-        if (link.href) out.push({ kind: 'image', text: link.text, href: link.href });
+        const imageHref = safeImageHref(link.href);
+        if (imageHref) out.push({ kind: 'image', text: link.text, href: imageHref });
         else if (link.text) out.push({ kind: 'text', text: link.text });
         i = link.next;
         continue;
@@ -96,7 +121,10 @@ export function parseInlines(src: string): Inline[] {
       const link = readLink(src, i);
       if (link) {
         flush();
-        out.push({ kind: 'link', text: link.text || link.href, href: link.href });
+        const href = safeLinkHref(link.href);
+        if (href) out.push({ kind: 'link', text: link.text || href, href });
+        else if (link.text) out.push({ kind: 'text', text: link.text });
+        else if (link.href) out.push({ kind: 'text', text: link.href });
         i = link.next;
         continue;
       }

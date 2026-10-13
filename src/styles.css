@@ -11,7 +11,7 @@
   --border-strong: #c9bba4;
   --text: #1c1914;
   --text-soft: #5c564b;
-  --muted: #8a8274;
+  --muted: #675e56;
   --accent: #0f766e;
   --accent-strong: #0b5f59;
   --accent-soft: rgba(15, 118, 110, 0.12);
@@ -19,14 +19,14 @@
   --study: #b45309;
   --study-strong: #9a4306;
   --study-soft: rgba(180, 83, 9, 0.13);
-  --green: #178f63;
-  --green-soft: rgba(23, 143, 99, 0.12);
+  --green: #0d6a4c;
+  --green-soft: rgba(13, 106, 76, 0.12);
   --red: #cc4444;
   --red-soft: rgba(204, 68, 68, 0.1);
   /* Alias: resolves to the theme's --red at use time. */
   --danger: var(--red);
-  --amber: #a3730f;
-  --amber-soft: rgba(163, 115, 15, 0.12);
+  --amber: #7c5609;
+  --amber-soft: rgba(124, 86, 9, 0.12);
   --shadow: 0 1px 2px rgba(48, 36, 18, 0.05), 0 10px 28px rgba(48, 36, 18, 0.07);
   --shadow-lift: 0 2px 6px rgba(48, 36, 18, 0.08), 0 16px 36px rgba(48, 36, 18, 0.12);
   --radius: 16px;
@@ -3308,7 +3308,9 @@ textarea.review-input {
     font-size: 14px;
   }
 
-  .flashcard {
+  /* `.has-figure` is as specific as the desktop height, so name it here too. */
+  .flashcard,
+  .flashcard.has-figure {
     height: min(64vh, 560px);
     height: min(64dvh, 560px);
     min-height: 320px;
@@ -3332,12 +3334,6 @@ textarea.review-input {
     justify-content: center;
     min-height: 48px;
     font-size: 15px;
-  }
-
-  /* The Cards tab already lists every card with search. */
-  .flashcards .card-search,
-  .card-index-study {
-    display: none;
   }
 
   .note-composer-heading,

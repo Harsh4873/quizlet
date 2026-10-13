@@ -32,6 +32,32 @@ describe('parseInlines', () => {
     expect(plainText(parseInlines('see ![diagram of a cell](img.png) here'))).toBe('see diagram of a cell here');
   });
 
+  it('allows http, https, and mailto links and keeps other targets as text', () => {
+    expect(parseInlines('[ok](https://example.com/a)')).toEqual([
+      { kind: 'link', text: 'ok', href: 'https://example.com/a' },
+    ]);
+    expect(parseInlines('[web](http://example.com)')).toEqual([
+      { kind: 'link', text: 'web', href: 'http://example.com' },
+    ]);
+    expect(parseInlines('[mail](mailto:study@example.com)')).toEqual([
+      { kind: 'link', text: 'mail', href: 'mailto:study@example.com' },
+    ]);
+    expect(parseInlines('[x](javascript:1)')).toEqual([{ kind: 'text', text: 'x' }]);
+    expect(parseInlines('[x](JAVASCRIPT:1)')).toEqual([{ kind: 'text', text: 'x' }]);
+    expect(parseInlines('[x](data:text/html,hi)')).toEqual([{ kind: 'text', text: 'x' }]);
+  });
+
+  it('keeps raster data images and drops other image targets', () => {
+    expect(parseInlines('![fig](data:image/png;base64,aaaa)')).toEqual([
+      { kind: 'image', text: 'fig', href: 'data:image/png;base64,aaaa' },
+    ]);
+    expect(parseInlines('![fig](https://cdn.example.com/fig.png)')).toEqual([
+      { kind: 'image', text: 'fig', href: 'https://cdn.example.com/fig.png' },
+    ]);
+    expect(parseInlines('![fig](javascript:1)')).toEqual([{ kind: 'text', text: 'fig' }]);
+    expect(parseInlines('![fig](data:image/svg+xml;base64,PHN2Zw)')).toEqual([{ kind: 'text', text: 'fig' }]);
+  });
+
   it('honors backslash escapes', () => {
     expect(plainText(parseInlines('not \\*italic\\* here'))).toBe('not *italic* here');
   });

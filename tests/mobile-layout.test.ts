@@ -50,6 +50,19 @@ describe('flashcards on a phone', () => {
     expect(declarations('.flashcard', phone)).toMatch(/height:\s*min\(\d+dvh/);
   });
 
+  it('caps figure cards with the same phone height', () => {
+    const rule = declarations('.flashcard.has-figure', phone);
+    expect(rule).toMatch(/min-height:\s*320px/);
+    expect(rule).toMatch(/height:\s*min\(64dvh/);
+    const desktop = css.replace(phone, '');
+    expect(declarations('.flashcard.has-figure', desktop)).toMatch(/min-height:\s*520px/);
+  });
+
+  it('keeps in-deck search available on a phone', () => {
+    expect(declarations('.flashcards .card-search', phone)).not.toMatch(/display:\s*none/);
+    expect(declarations('.card-index-study', phone)).not.toMatch(/display:\s*none/);
+  });
+
   it('gives the grade buttons a full thumb-sized target', () => {
     const rule = declarations('.grade-row .btn', phone);
     const height = Number(rule.match(/min-height:\s*(\d+)px/)?.[1]);
