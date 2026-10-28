@@ -7,12 +7,12 @@ import {
   isOwnerSetId,
 } from './owner-set';
 import { PAPER_PREFIX } from './paper-set';
-import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from './sample';
+import { EXAM_DECKS, isExamSetId } from './sample';
 import { defaultData, deleteSet, nextDataTimestamp, upsertSet } from './store';
 
 const IMPORT_MARKER = 'quizlet-import: user';
 
-/** An explicit user import survives the bundled Exam 1 fallback on reload and sync. */
+/** An explicit user import survives the bundled exam fallback on reload and sync. */
 export function markExamImport(markdown: string): string {
   if (hasExamImportMarker(markdown)) return markdown;
   const frontMatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/);
@@ -31,9 +31,9 @@ function isPaperSetId(setId: string): boolean {
   return setId.startsWith(PAPER_PREFIX);
 }
 
-/** Exam 1 (public bundle), Research papers, and private owner-vault decks. */
+/** Exam decks (public bundles), Research papers, and private owner-vault decks. */
 export function isKeptQuizletSetId(setId: string): boolean {
-  return setId === EXAM_SET_ID || isPaperSetId(setId) || isOwnerSetId(setId);
+  return isExamSetId(setId) || isPaperSetId(setId) || isOwnerSetId(setId);
 }
 
 /** Signed-out open: theme only. Decks arrive from the owner vault after Sync. */
@@ -74,9 +74,9 @@ function ensureBasilDeck(data: AppData, now: number): AppData {
 }
 
 /**
- * Quizlet ships Exam 1 and Basil CS/stats. Leave `paper-*` (Research) and
+ * Quizlet ships Exam 1, Exam 2 and Basil CS/stats. Leave `paper-*` (Research) and
  * other `owner-*` sets alone, including their markdown. An explicitly imported
- * Exam 1 deck is the only exception to the bundled fallback. Tombstone every
+ * exam deck is an exception to the bundled fallback. Tombstone every
  * other flashcard set so old decks disappear on sync.
  */
 export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
@@ -91,36 +91,24 @@ export function ensureQuizletLibrary(data: AppData, now = Date.now()): AppData {
     if (isOwnerSetId(set.id)) next = clearSetTombstone(next, set.id);
   }
 
-  const existing = next.sets.find((set) => set.id === EXAM_SET_ID);
-  if (existing && !hasExamImportMarker(existing.markdown)
-    && (existing.markdown !== EXAM_MARKDOWN || existing.title !== EXAM_SET_TITLE)) {
-    next = upsertSet(next, {
-      ...existing,
-      title: EXAM_SET_TITLE,
-      markdown: EXAM_MARKDOWN,
-      updatedAt: nextDataTimestamp(next, now),
-    });
-    return ensureBasilDeck(next, now);
-  }
-  if (!existing) {
-    const stamp = nextDataTimestamp(next, now);
-    const created: StudySet = {
-      id: EXAM_SET_ID,
-      title: EXAM_SET_TITLE,
-      markdown: EXAM_MARKDOWN,
-      createdAt: stamp,
-      updatedAt: stamp,
-    };
-    return ensureBasilDeck(clearSetTombstone(upsertSet(next, created), EXAM_SET_ID), now);
-  }
-
-  if (!existing.markdown.trim()) {
-    next = upsertSet(next, {
-      ...existing,
-      title: existing.title.trim() || EXAM_SET_TITLE,
-      markdown: EXAM_MARKDOWN,
-      updatedAt: nextDataTimestamp(next, now),
-    });
+  for (const deck of EXAM_DECKS) {
+    const existing = next.sets.find((set) => set.id === deck.id);
+    if (!existing) {
+      const stamp = nextDataTimestamp(next, now);
+      const created: StudySet = { ...deck, createdAt: stamp, updatedAt: stamp };
+      next = clearSetTombstone(upsertSet(next, created), deck.id);
+    } else {
+      if (!hasExamImportMarker(existing.markdown)
+        && (existing.markdown !== deck.markdown || existing.title !== deck.title)) {
+        next = upsertSet(next, {
+          ...existing,
+          title: deck.title,
+          markdown: deck.markdown,
+          updatedAt: nextDataTimestamp(next, now),
+        });
+      }
+      next = clearSetTombstone(next, deck.id);
+    }
   }
 
   return ensureBasilDeck(next, now);

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import type { StudyMaterial, StudySet } from '../model';
 import { kindOf } from '../lib/card-kinds';
-import { EXAM_SET_ID } from '../lib/sample';
+import { EXAM_SET_ID, isExamSetId } from '../lib/sample';
 import { isOwnerSetId } from '../lib/owner-set';
 
 interface CardsHomeProps {
@@ -27,7 +27,7 @@ export function CardsHome({ sets, onStudy }: CardsHomeProps) {
   }, [indexSet, query, sets.length]);
 
   const folders = [
-    { title: 'CSCE 627', entries: sets.filter((entry) => entry.set.id === EXAM_SET_ID) },
+    { title: 'CSCE 627', entries: sets.filter((entry) => isExamSetId(entry.set.id)) },
     { title: 'Research', entries: sets.filter((entry) => isOwnerSetId(entry.set.id)) },
   ].filter((folder) => folder.entries.length > 0);
 

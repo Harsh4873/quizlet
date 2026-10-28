@@ -26,7 +26,7 @@ import {
   writeActiveAccountId,
 } from './lib/store';
 import { recordBestMatch } from './lib/sync-core';
-import { EXAM_SET_ID, EXAM_SET_TITLE } from './lib/sample';
+import { EXAM_SET_ID, EXAM_SET_TITLE, EXAM_DECKS, isExamSetId } from './lib/sample';
 import {
   clearSetTombstone,
   ensureQuizletLibrary,
@@ -274,14 +274,16 @@ export default function App() {
         }
         markdown = normalizeHtmlInMarkdown(markdown);
         const docTitle = parseMarkdown(markdown).title;
-        const targetId = item.setId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_ID : EXAM_SET_ID;
+        const targetId = item.setId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_ID
+          : item.setId && isExamSetId(item.setId) ? item.setId : EXAM_SET_ID;
         if (targetId === OWNER_BASIL_CS_STATS_ID
           && syncStatusRef.current.state !== 'synced' && syncStatusRef.current.state !== 'syncing') {
           errors.push('Turn on Sync with an owner-vault account before importing into Basil CS/stats.');
           continue;
         }
-        if (targetId === EXAM_SET_ID) markdown = markExamImport(markdown);
-        const fallbackTitle = targetId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_TITLE : EXAM_SET_TITLE;
+        if (isExamSetId(targetId)) markdown = markExamImport(markdown);
+        const fallbackTitle = targetId === OWNER_BASIL_CS_STATS_ID ? OWNER_BASIL_CS_STATS_TITLE
+          : EXAM_DECKS.find((deck) => deck.id === targetId)?.title ?? EXAM_SET_TITLE;
         const stamp = nextDataTimestamp(next);
         const existing = next.sets.find((set) => set.id === targetId);
         const set: StudySet = {
@@ -304,7 +306,7 @@ export default function App() {
     setData(curated);
     if (errors.length > 0) setNotice(errors[0]);
     else if (importedId) {
-      setNotice(`${importedId === EXAM_SET_ID ? 'Updated Exam 1' : `Updated ${importedTitle}`}.${importedSummary ? ` ${importedSummary}.` : ''}`);
+      setNotice(`Updated ${importedTitle}.${importedSummary ? ` ${importedSummary}.` : ''}`);
       if (importedId === EXAM_SET_ID) openCards();
       else openSetCards(importedId);
     }
@@ -323,8 +325,8 @@ export default function App() {
   };
 
   const removeSet = (set: StudySet) => {
-    if (set.id === EXAM_SET_ID) {
-      setNotice('Exam 1 cannot be removed.');
+    if (isExamSetId(set.id)) {
+      setNotice(`${set.title} cannot be removed.`);
       return;
     }
     if (isPaperSet(set.id)) {
@@ -474,7 +476,7 @@ export default function App() {
             onNavigate={(mode) => navigate(`/set/${activeSet.id}/${mode}`)}
             onBack={openCards}
             backLabel="Cards"
-            canDelete={activeSet.id !== EXAM_SET_ID}
+            canDelete={!isExamSetId(activeSet.id)}
             onAnswer={answerFor(activeSet.id)}
             onToggleStar={starFor(activeSet.id)}
             onBestTime={bestTimeFor(activeSet.id)}

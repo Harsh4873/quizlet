@@ -1,3 +1,4 @@
+import { EXAM_2_FIGURES } from './Exam2Diagrams';
 import { useId, type ReactNode } from 'react';
 import {
   DiffGridFigure,
@@ -872,6 +873,7 @@ const FIGURES: Record<string, ReactNode> = {
   ),
   'q-prime-table': <QPrimeTableFigure />,
   ...TUPLE_SHEETS,
+  ...EXAM_2_FIGURES,
   'pda-label': <PdaLabelFigure />,
   'perfect-shuffle': <PerfectShuffleFigure />,
   'pump-split': <PumpSplitFigure />,

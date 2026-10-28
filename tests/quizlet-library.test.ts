@@ -16,7 +16,7 @@ import {
   libraryOnOpen,
   markExamImport,
 } from '../src/lib/quizlet-library';
-import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE } from '../src/lib/sample';
+import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE, EXAM_2_SET_ID } from '../src/lib/sample';
 import { defaultData, loadAccountData, memoryStorage, saveAccountData, upsertSet } from '../src/lib/store';
 
 describe('signed-out and rejected accounts', () => {
@@ -105,7 +105,7 @@ describe('ensureQuizletLibrary', () => {
     expect(exam?.markdown).toBe(EXAM_MARKDOWN);
     expect(basil?.title).toBe(OWNER_BASIL_CS_STATS_TITLE);
     expect(basil?.markdown).toBe(BASIL_MARKDOWN);
-    expect(next.sets.map((set) => set.id).sort()).toEqual([EXAM_SET_ID, OWNER_BASIL_CS_STATS_ID]);
+    expect(next.sets.map((set) => set.id).sort()).toEqual([EXAM_SET_ID, EXAM_2_SET_ID, OWNER_BASIL_CS_STATS_ID]);
   });
 
   it('tombstones stray flashcard decks and keeps paper and owner sets', () => {
@@ -142,6 +142,7 @@ describe('ensureQuizletLibrary', () => {
     const next = ensureQuizletLibrary(data, 5000);
     expect(next.sets.map((set) => set.id).sort()).toEqual([
       EXAM_SET_ID,
+      EXAM_2_SET_ID,
       OWNER_BASIL_CS_STATS_ID,
       'paper-abc',
     ]);

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { ClipboardPaste, Download, FilePlus2, Search, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import type { AppData, StudyMaterial, StudySet } from '../model';
 import { masteryPercent } from '../lib/store';
-import { EXAM_SET_ID } from '../lib/sample';
+import { EXAM_SET_ID, EXAM_2_SET_ID, EXAM_DECKS, isExamSetId } from '../lib/sample';
 import { OWNER_BASIL_CS_STATS_ID, isOwnerSetId } from '../lib/owner-set';
 
 export interface ImportItem {
@@ -52,7 +52,9 @@ export function Library({
   const fileInput = useRef<HTMLInputElement>(null);
   const targetId = allowOwnerSets && importTarget === OWNER_BASIL_CS_STATS_ID
     ? OWNER_BASIL_CS_STATS_ID
-    : EXAM_SET_ID;
+    : isExamSetId(importTarget) ? importTarget : EXAM_SET_ID;
+  const targetTitle = EXAM_DECKS.find((deck) => deck.id === targetId)?.title ?? 'Exam 1';
+  const exam2 = data.sets.find((set) => set.id === EXAM_2_SET_ID);
   const hasOwnerBasilSet = data.sets.some((set) => set.id === OWNER_BASIL_CS_STATS_ID);
 
   const visible = useMemo(() => {
@@ -162,6 +164,11 @@ export function Library({
           <button type="button" className="btn btn-ghost" onClick={onLoadSample}>
             <Sparkles size={16} aria-hidden /> Open Exam 1
           </button>
+          {exam2 && (
+            <button type="button" className="btn btn-ghost" onClick={() => onOpen(exam2)}>
+              <Sparkles size={16} aria-hidden /> Open Exam 2
+            </button>
+          )}
           {allowOwnerSets && !hasOwnerBasilSet && onAddOwnerBasilSet && (
             <button
               type="button"
@@ -203,6 +210,15 @@ export function Library({
               <input
                 type="radio"
                 name="import-target"
+                checked={targetId === EXAM_2_SET_ID}
+                onChange={() => setImportTarget(EXAM_2_SET_ID)}
+              />
+              Exam 2
+            </label>
+            <label className="import-target-option">
+              <input
+                type="radio"
+                name="import-target"
                 checked={targetId === OWNER_BASIL_CS_STATS_ID}
                 onChange={() => setImportTarget(OWNER_BASIL_CS_STATS_ID)}
               />
@@ -213,7 +229,7 @@ export function Library({
         <p className="drop-hint">
           {targetId === OWNER_BASIL_CS_STATS_ID
             ? <>…or drop a <code>.pptx</code>, <code>.md</code>, or export <code>.json</code> into the private Basil set.</>
-            : <>…or drop a <code>.pptx</code>, <code>.md</code>, or export <code>.json</code> to replace Exam 1.</>}
+            : <>…or drop a <code>.pptx</code>, <code>.md</code>, or export <code>.json</code> to replace {targetTitle}.</>}
         </p>
         {importProgress && <p className="import-progress" role="status">{importProgress}</p>}
         {importError && <p className="import-error" role="alert">{importError}</p>}
@@ -235,7 +251,7 @@ export function Library({
             />
             <div className="paste-form-actions">
               <button type="button" className="btn btn-primary" disabled={!pasteBody.trim()} onClick={submitPaste}>
-                <FilePlus2 size={16} aria-hidden /> {targetId === OWNER_BASIL_CS_STATS_ID ? 'Save Basil CS/stats' : 'Replace Exam 1'}
+                <FilePlus2 size={16} aria-hidden /> {targetId === OWNER_BASIL_CS_STATS_ID ? 'Save Basil CS/stats' : `Replace ${targetTitle}`}
               </button>
             </div>
           </div>
