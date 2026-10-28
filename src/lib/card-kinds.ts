@@ -1,6 +1,6 @@
 import type { TermCard } from '../model';
 
-/** The four `##` sections of the Exam 1 deck. Labels only: study is the whole deck. */
+/** The four `##` sections of the Exam 1 deck. Flashcards can filter by place. */
 export type CardKind = 'term' | 'rule' | 'theorem' | 'example';
 
 /** Gym cards are said out loud and flipped; desk cards need paper. */

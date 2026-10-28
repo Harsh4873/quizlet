@@ -76,7 +76,9 @@ export function SetShell(props: SetShellProps) {
 
   // Papers are for reading; note sets are for studying.
   const isPaper = isPaperSet(set.id);
-  const tabs = isPaper ? PAPER_TABS : STUDY_TABS;
+  const tabs = (isPaper ? PAPER_TABS : STUDY_TABS).filter(
+    (tab) => tab.mode !== 'blanks' || material.clozes.length > 0,
+  );
   const front = isPaper ? paperFrontMatter(set.markdown) : {};
   const subtitle = isPaper ? paperSubtitle(front) : '';
   const doi = front.doi;

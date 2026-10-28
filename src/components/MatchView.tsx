@@ -35,7 +35,7 @@ export function MatchView({ material, progress, onAnswer, onBestTime }: MatchVie
     const pairs = buildMatchRound(material.terms, ROUND_SIZE, seed);
     const all: Tile[] = pairs.flatMap((p) => [
       { key: `${p.id}:t`, pairId: p.id, text: p.term, isTerm: true },
-      { key: `${p.id}:d`, pairId: p.id, text: truncate(p.definition, 110), isTerm: false },
+      { key: `${p.id}:d`, pairId: p.id, text: p.definition, isTerm: false },
     ]);
     return shuffle(all, mulberry32(seed * 7 + 1));
   }, [material, seed]);
@@ -156,10 +156,6 @@ export function MatchView({ material, progress, onAnswer, onBestTime }: MatchVie
       )}
     </div>
   );
-}
-
-function truncate(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
 function formatMs(ms: number): string {

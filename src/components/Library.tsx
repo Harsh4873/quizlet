@@ -12,6 +12,8 @@ export interface ImportItem {
   error?: string;
   setId?: string;
   summary?: string;
+  /** Extra sentence for the import notice, such as ignored files. */
+  note?: string;
 }
 
 interface LibraryProps {
@@ -85,12 +87,15 @@ export function Library({
 
   const handleFiles = async (files: FileList | File[]) => {
     if (importBusy) return;
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    const note = list.length > 1 ? 'Extra files were left out' : undefined;
     setImportBusy(true);
     setImportError('');
     const items: ImportItem[] = [];
     const destination = targetId;
     try {
-      for (const file of Array.from(files)) {
+      for (const file of list.slice(0, 1)) {
         const name = file.name.replace(/\.(md|markdown|txt|json|pptx)$/i, '');
         setImportProgress(`Reading ${file.name}…`);
         try {
@@ -107,16 +112,19 @@ export function Library({
               markdown: converted.markdown,
               setId: destination,
               summary: `${cards} cards, ${clozeCount} blanks, ${figures} figures${skippedFigures ? ` (${skippedFigures} could not be embedded)` : ''}`,
+              note,
             });
           } else if (/\.(md|markdown|txt|json)$/i.test(file.name)) {
             const source = await file.text();
-            if (/\.json$/i.test(file.name)) items.push({ title: name, json: source, setId: destination });
-            else items.push({ title: name, markdown: source, setId: destination });
+            if (/\.json$/i.test(file.name)) items.push({ title: name, json: source, setId: destination, note });
+            else items.push({ title: name, markdown: source, setId: destination, note });
           } else throw new Error('Choose a .pptx, .md, .txt, or exported .json file.');
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Could not read the file.';
-          items.push({ error: `${file.name}: ${message}` });
-          setImportError(`${file.name}: ${message}`);
+          const errorText = `${file.name}: ${message}`;
+          items.push({ error: errorText, note });
+          const base = /[.!?]$/.test(errorText) ? errorText : `${errorText}.`;
+          setImportError(note ? `${base} ${note}.` : errorText);
         }
       }
       if (items.length > 0) onImport(items);
@@ -159,7 +167,7 @@ export function Library({
             <ClipboardPaste size={16} aria-hidden /> Paste markdown
           </button>
           <button type="button" className="btn" disabled={importBusy} onClick={() => fileInput.current?.click()}>
-            <Upload size={16} aria-hidden /> Upload files
+            <Upload size={16} aria-hidden /> Upload a file
           </button>
           <button type="button" className="btn btn-ghost" onClick={onLoadSample}>
             <Sparkles size={16} aria-hidden /> Open Exam 1
@@ -186,7 +194,6 @@ export function Library({
             ref={fileInput}
             type="file"
             accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.md,.markdown,.txt,.json,text/markdown,text/plain,application/json"
-            multiple
             hidden
             onChange={(e) => {
               if (e.target.files) void handleFiles(e.target.files);
@@ -319,9 +326,11 @@ export function Library({
                     <button type="button" className="icon-btn" onClick={() => onExport(set)} aria-label={`Export ${set.title}`} title="Export as JSON">
                       <Download size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-btn icon-btn-danger" onClick={() => onDelete(set)} aria-label={`Remove ${set.title}`} title="Remove set">
-                      <Trash2 size={16} aria-hidden />
-                    </button>
+                    {!isExamSetId(set.id) && (
+                      <button type="button" className="icon-btn icon-btn-danger" onClick={() => onDelete(set)} aria-label={`Remove ${set.title}`} title="Remove set">
+                        <Trash2 size={16} aria-hidden />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

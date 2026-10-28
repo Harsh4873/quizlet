@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Check, RotateCcw, X } from 'lucide-react';
-import type { SetProgress, StudyMaterial } from '../model';
+import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { buildQuiz, type QuizQuestion } from '../lib/questions';
 import { weakCardIds } from '../lib/store';
 import { EmptyModeNote } from './Flashcards';
+import { ExamFigure } from './Machine';
 
 interface QuizViewProps {
   material: StudyMaterial;
@@ -26,6 +27,7 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answered, setAnswered] = useState<Answered[]>([]);
+  const [weakNote, setWeakNote] = useState('');
 
   const allIds = useMemo(
     () => [...material.terms.map((t) => t.id), ...material.clozes.map((c) => c.id)],
@@ -39,7 +41,14 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   }
 
   const start = (ids?: Set<string>) => {
-    const cardIds = ids ?? (weakOnly ? weakCardIds(progress, allIds) : undefined);
+    const weakIds = weakOnly ? weakCardIds(progress, allIds) : undefined;
+    if (!ids && weakOnly && weakIds && weakIds.size === 0) {
+      setWeakNote('Nothing is weak right now. Every card in this set is mastered.');
+      setPhase('setup');
+      return;
+    }
+    setWeakNote('');
+    const cardIds = ids ?? weakIds;
     const built = buildQuiz(material.terms, material.clozes, {
       count: length,
       seed: (Date.now() % 2147483647) || 1,
@@ -74,11 +83,19 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
           </div>
         </div>
         <label className="setup-row check-row">
-          <input type="checkbox" checked={weakOnly} onChange={(e) => setWeakOnly(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={weakOnly}
+            onChange={(e) => {
+              setWeakOnly(e.target.checked);
+              if (!e.target.checked) setWeakNote('');
+            }}
+          />
           <span>
             Focus weak cards only{weakCount > 0 ? ` (${weakCount})` : ''}
           </span>
         </label>
+        {weakNote && <p className="quiz-sub" role="status">{weakNote}</p>}
         <button type="button" className="btn btn-primary btn-lg" onClick={() => start()}>
           Start quiz
         </button>
@@ -105,6 +122,7 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
                 <div className="missed-a">
                   <Check size={14} aria-hidden /> {a.question.options[a.question.answerIndex]}
                 </div>
+                <LockedAnswerMedia term={material.terms.find((term) => term.id === a.question.cardId)} />
               </div>
             ))}
           </div>
@@ -131,11 +149,14 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
   }
 
   const question = questions[index];
+  const asked = material.terms.find((term) => term.id === question.cardId);
   const kindLabel =
     question.kind === 'def-to-term'
       ? 'Which term matches this definition?'
       : question.kind === 'term-to-def'
-        ? 'What does this term mean?'
+        ? (asked?.source === 'qa' || asked?.source === 'section'
+          ? 'Which answer matches this question?'
+          : 'What does this term mean?')
         : 'Fill in the blank';
 
   const pick = (optionIndex: number) => {
@@ -168,9 +189,6 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
       <div className="quiz-question">
         <div className="question-kind">{kindLabel}</div>
         <div className={`question-prompt ${question.kind === 'cloze' ? 'question-cloze' : ''}`}>{question.prompt}</div>
-        {material.terms.find((term) => term.id === question.cardId)?.images?.map((img, i) => (
-          <img className="quiz-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
-        ))}
       </div>
 
       <div className="options-list" role="listbox" aria-label="Answer options">
@@ -192,6 +210,8 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
         })}
       </div>
 
+      {picked !== null && <LockedAnswerMedia term={asked} />}
+
       {picked !== null && (
         <div className="quiz-next-row fade-in">
           <span className={picked === question.answerIndex ? 'feedback-correct' : 'feedback-wrong'}>
@@ -202,6 +222,21 @@ export function QuizView({ material, progress, onAnswer }: QuizViewProps) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Diagrams and imported figures belong to the answer, so they stay hidden until the choice is locked. */
+function LockedAnswerMedia({ term }: { term?: TermCard }) {
+  if (!term) return null;
+  const images = term.images ?? [];
+  if (!term.figure && images.length === 0) return null;
+  return (
+    <div className="quiz-answer-media">
+      {term.figure ? <ExamFigure id={term.figure} /> : null}
+      {images.map((img, i) => (
+        <img className="quiz-import-image" src={img.src} alt={img.alt} key={`${img.src}:${i}`} loading="lazy" />
+      ))}
     </div>
   );
 }

@@ -7,8 +7,8 @@ Quizlet is the owner's exam flashcard app, published at `https://harsh.bet/quizl
 - Cards show up only after Sync on the owner vault. A signed-out visit and any Google account outside that vault see an empty library.
 - The vault has two folders: **CSCE 627** (Exam 1) and **Research** (Basil CS/stats).
 - Study modes: **Notes**, **Flashcards**, **Quiz**, **Blanks**, and **Match**.
-- One cumulative Exam 1 deck. Cards still sit under `## Terms`, `## Rules`, `## Theorems`, and `## Examples`, and each card is labeled, but study is the whole deck.
-- Flashcards filter by card type: **Gym** (Terms, Rules, Theorems) or **Examples** (desk work with paper), taken from the deck's `##` headings.
+- One cumulative Exam 1 deck. Cards still sit under `## Terms`, `## Rules`, `## Theorems`, and `## Examples`, and each card is labeled.
+- Flashcards study the whole deck, or only **Gym** (Terms, Rules, Theorems) or **Examples** (desk work with paper), taken from the deck's `##` headings.
 - Upload or drop `.pptx`, markdown, or a set export (`.json`) in Library. PPTX conversion runs in the browser and makes topic-grouped cards from split concepts, speaker notes, table rows, and captioned figures. Clear glossary definitions also make reverse and fill-in practice. Imports replace Exam 1 on this device (and in the owner vault if Sync is active), or upsert the private Basil set when owner-vault Sync is active.
 - Optional Sync uses the shared private owner vault (`recall_users/{vaultId}/sets`). On sync it ensures Exam 1 exists, leaves `paper-*` and `owner-*` sets alone, and tombstones other stray flashcard decks. Unapproved Google accounts cannot sync.
 

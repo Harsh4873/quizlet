@@ -6,6 +6,7 @@ import { kindOf } from '../lib/card-kinds';
 import { ExamFigure } from './Machine';
 
 type Filter = 'all' | 'weak' | 'starred';
+type PlaceFilter = 'all' | 'gym' | 'desk';
 
 interface FlashcardsProps {
   material: StudyMaterial;
@@ -21,8 +22,40 @@ function textSizeClass(text: string): string {
   return '';
 }
 
+function shortcutTargetIsControl(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  // The sync popover is a dialog. Keys there must not flip or advance the card.
+  if (target.closest('[role="dialog"]')) return true;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'A') return true;
+  return tag === 'BUTTON' && !target.classList.contains('flashcard');
+}
+
+function emptyDeckCopy(filter: Filter, place: PlaceFilter): string {
+  if (filter === 'weak') {
+    if (place === 'gym') return 'No weak gym cards. Everything in the gym is mastered.';
+    if (place === 'desk') return 'No weak example cards. Everything at the desk is mastered.';
+    return 'Nothing left to review here. Every card is mastered.';
+  }
+  if (filter === 'starred') {
+    if (place === 'gym') return 'No starred gym cards yet. Star cards while you study.';
+    if (place === 'desk') return 'No starred example cards yet. Star cards while you study.';
+    return 'No starred cards here yet. Star cards while you study.';
+  }
+  if (place === 'gym') return 'No gym cards in this set.';
+  if (place === 'desk') return 'No example cards in this set.';
+  return 'No cards in this set.';
+}
+
+/** Keep the gym/examples choice when that place still has cards. */
+export function emptyDeckKeepsPlace(filter: Filter, placeHasCards: boolean): boolean {
+  return filter !== 'all' && placeHasCards;
+}
+
 export function Flashcards({ material, progress, onAnswer, onToggleStar, startIndex = 0 }: FlashcardsProps) {
   const [filter, setFilter] = useState<Filter>('all');
+  const [place, setPlace] = useState<PlaceFilter>('all');
   const [termFirst, setTermFirst] = useState(true);
   const [seed, setSeed] = useState(0);
   const [roundKey, setRoundKey] = useState(0);
@@ -39,17 +72,51 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   // The deck is frozen for the round: progress changes mid-round must not reorder it.
   const deck: TermCard[] = useMemo(() => {
     const source = material.terms.filter((card) => {
+      if (place !== 'all' && kindOf(card)?.place !== place) return false;
       if (filter === 'weak') return (progress.cards[card.id]?.box ?? 0) < 3;
       if (filter === 'starred') return progress.cards[card.id]?.starred === true;
       return true;
     });
     return seed === 0 ? source : shuffle(source, mulberry32(seed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [material, filter, seed, roundKey]);
+  }, [material, filter, place, seed, roundKey]);
+
+  useEffect(() => {
+    if (place === 'all') return;
+    if (material.terms.some((card) => kindOf(card)?.place === place)) return;
+    setPlace('all');
+  }, [material, place]);
+
+  useEffect(() => {
+    if (deck.length === 0 || index < deck.length) return;
+    setIndex(deck.length - 1);
+    setFlipped(false);
+  }, [deck.length, index]);
 
   const restart = (nextFilter?: Filter) => {
     if (nextFilter) setFilter(nextFilter);
     startConsumed.current = true;
+    setRoundKey((k) => k + 1);
+    setIndex(0);
+    setFlipped(false);
+    setTally({ got: 0, missed: 0 });
+    setDone(false);
+  };
+
+  const choosePlace = (next: PlaceFilter) => {
+    startConsumed.current = true;
+    setPlace(next);
+    setRoundKey((k) => k + 1);
+    setIndex(0);
+    setFlipped(false);
+    setTally({ got: 0, missed: 0 });
+    setDone(false);
+  };
+
+  const studyEverything = () => {
+    startConsumed.current = true;
+    setFilter('all');
+    setPlace('all');
     setRoundKey((k) => k + 1);
     setIndex(0);
     setFlipped(false);
@@ -86,16 +153,18 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (shortcutTargetIsControl(e.target)) return;
       if (done || !card) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         setFlipped((f) => !f);
-      } else if (e.key === 'ArrowRight') {
-        advance();
-      } else if (e.key === 'ArrowLeft' && index > 0) {
-        setFlipped(false);
-        setIndex(index - 1);
+      } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !e.altKey && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        if (e.key === 'ArrowRight') advance();
+        else if (index > 0) {
+          setFlipped(false);
+          setIndex(index - 1);
+        }
       } else if (e.key === '1' && flipped) {
         grade(false);
       } else if (e.key === '2' && flipped) {
@@ -111,16 +180,15 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   }
 
   if (deck.length === 0) {
+    const placeHasCards = place === 'all'
+      || material.terms.some((term) => kindOf(term)?.place === place);
+    const keepPlace = emptyDeckKeepsPlace(filter, placeHasCards);
     return (
       <div className="flashcards fade-in">
         <div className="mode-empty">
-          <p>
-            {filter === 'weak'
-              ? 'Nothing left to review here. Every card is mastered.'
-              : 'No starred cards here yet. Star cards while you study.'}
-          </p>
-          <button type="button" className="btn" onClick={() => restart('all')}>
-            Study all of these
+          <p>{emptyDeckCopy(filter, place)}</p>
+          <button type="button" className="btn" onClick={keepPlace ? () => restart('all') : studyEverything}>
+            {keepPlace ? 'Study all of these' : 'Study the whole set'}
           </button>
         </div>
       </div>
@@ -150,13 +218,16 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   const starred = card ? progress.cards[card.id]?.starred === true : false;
   const info = card ? kindOf(card) : undefined;
   const questionCard = card?.source === 'section';
-  const promptLabel = info ? info.label : questionCard ? 'Question' : 'Term';
+  const promptLabel = info ? `${info.label} · ${info.place}` : questionCard ? 'Question' : 'Term';
   const answerLabel = info || questionCard ? 'Answer' : 'Definition';
   const frontLabel = termFirst ? promptLabel : answerLabel;
   const backLabel = termFirst ? answerLabel : promptLabel;
   const frontText = card ? (termFirst ? card.term : card.definition) : '';
   const backText = card ? (termFirst ? card.definition : card.term) : '';
   const deckIds = new Set(deck.map((item) => item.id));
+  const gymCount = material.terms.filter((card) => kindOf(card)?.place === 'gym').length;
+  const exampleCount = material.terms.filter((card) => kindOf(card)?.place === 'desk').length;
+  const placeCount = material.terms.filter((card) => place === 'all' || kindOf(card)?.place === place).length;
 
   return (
     <div className="flashcards fade-in">
@@ -167,12 +238,28 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
               key={f}
               type="button"
               className={`chip ${filter === f ? 'chip-active' : ''}`}
+              aria-pressed={filter === f}
               onClick={() => restart(f)}
             >
-              {f === 'all' ? `All (${material.terms.length})` : f === 'weak' ? 'Weak' : 'Starred'}
+              {f === 'all' ? `All (${placeCount})` : f === 'weak' ? 'Weak' : 'Starred'}
             </button>
           ))}
         </div>
+        {gymCount > 0 && exampleCount > 0 && (
+          <div className="toolbar-group" role="group" aria-label="Gym or examples">
+            {(['all', 'gym', 'desk'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`chip ${place === p ? 'chip-active' : ''}`}
+                aria-pressed={place === p}
+                onClick={() => choosePlace(p)}
+              >
+                {p === 'all' ? 'All places' : p === 'gym' ? `Gym (${gymCount})` : `Examples (${exampleCount})`}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="toolbar-group">
           <button type="button" className="chip" onClick={() => { setTermFirst((v) => !v); setFlipped(false); }}>
             Front: {termFirst ? 'prompt' : 'answer'}
@@ -205,6 +292,11 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
           onPointerDown={(event) => {
             if (event.button !== 0) return;
             drag.current = { x: event.clientX, y: event.clientY, pointing: true };
+            try {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {
+              /* Pointer up on the card still ends the gesture. */
+            }
           }}
           onPointerMove={(event) => {
             if (!drag.current.pointing) return;
@@ -230,11 +322,16 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
             drag.current.pointing = false;
             setOffset(0);
           }}
+          onLostPointerCapture={() => {
+            if (!drag.current.pointing) return;
+            drag.current.pointing = false;
+            setOffset(0);
+          }}
         >
           {offset > 28 ? <span className="swipe-stamp swipe-yes">Got it</span> : null}
           {offset < -28 ? <span className="swipe-stamp swipe-no">Still learning</span> : null}
           <span className="flashcard-inner">
-            <span className="flashcard-face flashcard-front">
+            <span className="flashcard-face flashcard-front" aria-hidden={flipped || undefined}>
               <span className="face-label">{frontLabel}</span>
               <span className={`face-text ${textSizeClass(frontText)}`}>{frontText}</span>
               {!termFirst && card.images?.map((img, i) => (
@@ -242,7 +339,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
               ))}
               <span className="face-hint">Tap to flip</span>
             </span>
-            <span className="flashcard-face flashcard-back">
+            <span className="flashcard-face flashcard-back" aria-hidden={!flipped || undefined}>
               <span className="face-label">{backLabel}</span>
               <span className={`face-text ${card.figure || card.images?.length ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
               {termFirst && card.images?.map((img, i) => (

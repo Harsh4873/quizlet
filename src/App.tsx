@@ -33,6 +33,7 @@ import {
   libraryAfterRejectedAccount,
   libraryOnOpen,
   markExamImport,
+  offlineLibraryWrite,
 } from './lib/quizlet-library';
 import {
   OWNER_BASIL_CS_STATS_ID,
@@ -176,13 +177,17 @@ export default function App() {
   };
 
   const disableSync = async () => {
+    const accountId = activeAccountRef.current;
+    const current = dataRef.current;
+    if (offlineLibraryWrite(accountId, current) === 'account' && accountId) {
+      saveAccountData(accountId, current);
+    }
     ownerReadyRef.current = false;
     setOwnerReady(false);
     setSyncFlag(false);
     syncStatusRef.current = { state: 'off' };
     setSyncStatus({ state: 'off' });
     await cloudRef.current?.signOut();
-    setData((current) => libraryAfterRejectedAccount(current));
   };
 
   useEffect(() => {
@@ -204,7 +209,10 @@ export default function App() {
 
   useEffect(() => {
     if (!ownerReadyRef.current) {
-      if (!activeAccountRef.current) saveData({ ...defaultData(), theme: data.theme });
+      const accountId = activeAccountRef.current;
+      const write = offlineLibraryWrite(accountId, data);
+      if (write === 'theme-only') saveData({ ...defaultData(), theme: data.theme });
+      else if (write === 'account' && accountId) saveAccountData(accountId, data);
       return;
     }
     const uid = activeAccountRef.current;
@@ -255,7 +263,9 @@ export default function App() {
     let importedId: string | null = null;
     let importedTitle = EXAM_SET_TITLE;
     let importedSummary = '';
+    let batchNote = '';
     for (const item of items) {
+      if (item.note) batchNote = item.note;
       if (item.error) {
         errors.push(item.error);
         continue;
@@ -304,9 +314,18 @@ export default function App() {
     const curated = ensureQuizletLibrary(next);
     dataRef.current = curated;
     setData(curated);
-    if (errors.length > 0) setNotice(errors[0]);
-    else if (importedId) {
-      setNotice(`Updated ${importedTitle}.${importedSummary ? ` ${importedSummary}.` : ''}`);
+    const savedLabel = importedTitle;
+    const summary = importedSummary ? ` ${importedSummary}.` : '';
+    let notice = '';
+    if (errors.length > 0 && importedId) notice = `${errors[0]} ${savedLabel} was still updated.${summary}`;
+    else if (errors.length > 0) notice = errors[0];
+    else if (importedId) notice = `Updated ${savedLabel}.${summary}`;
+    if (notice && batchNote) {
+      const base = /[.!?]$/.test(notice.trim()) ? notice.trim() : `${notice.trim()}.`;
+      notice = `${base} ${batchNote}.`;
+    }
+    if (notice) setNotice(notice);
+    if (importedId) {
       if (importedId === EXAM_SET_ID) openCards();
       else openSetCards(importedId);
     }
@@ -375,7 +394,8 @@ export default function App() {
   const saveMarkdown = (set: StudySet) => (markdown: string) => {
     setData((d) => {
       const current = d.sets.find((candidate) => candidate.id === set.id) ?? set;
-      return upsertSet(d, { ...current, markdown, updatedAt: nextDataTimestamp(d) });
+      const nextMarkdown = isExamSetId(current.id) ? markExamImport(markdown) : markdown;
+      return upsertSet(d, { ...current, markdown: nextMarkdown, updatedAt: nextDataTimestamp(d) });
     });
   };
 
@@ -384,7 +404,8 @@ export default function App() {
     const markdown = `${set.markdown.trimEnd()}${heading}\n\n${note.trim()}\n`;
     setData((d) => {
       const current = d.sets.find((candidate) => candidate.id === set.id) ?? set;
-      return upsertSet(d, { ...current, markdown, updatedAt: nextDataTimestamp(d) });
+      const nextMarkdown = isExamSetId(current.id) ? markExamImport(markdown) : markdown;
+      return upsertSet(d, { ...current, markdown: nextMarkdown, updatedAt: nextDataTimestamp(d) });
     });
     setNotice('Note added. Your study material has been refreshed.');
   };
