@@ -17,7 +17,7 @@ import {
   markExamImport,
   offlineLibraryWrite,
 } from '../src/lib/quizlet-library';
-import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE, EXAM_2_SET_ID } from '../src/lib/sample';
+import { EXAM_MARKDOWN, EXAM_SET_ID, EXAM_SET_TITLE, EXAM_2_SET_ID, EXAM_3_SET_ID } from '../src/lib/sample';
 import { defaultData, loadAccountData, memoryStorage, saveAccountData, upsertSet } from '../src/lib/store';
 
 describe('signed-out and rejected accounts', () => {
@@ -111,7 +111,7 @@ describe('ensureQuizletLibrary', () => {
     expect(next.tombstones[OWNER_BASIL_CS_STATS_ID]).toBe(50);
   });
 
-  it('creates exam-1-627 and the bundled Basil deck', () => {
+  it('creates the bundled course decks and Basil deck', () => {
     const next = ensureQuizletLibrary(defaultData(), 1000);
     const exam = next.sets.find((set) => set.id === EXAM_SET_ID);
     const basil = next.sets.find((set) => set.id === OWNER_BASIL_CS_STATS_ID);
@@ -119,7 +119,7 @@ describe('ensureQuizletLibrary', () => {
     expect(exam?.markdown).toBe(EXAM_MARKDOWN);
     expect(basil?.title).toBe(OWNER_BASIL_CS_STATS_TITLE);
     expect(basil?.markdown).toBe(BASIL_MARKDOWN);
-    expect(next.sets.map((set) => set.id).sort()).toEqual([EXAM_SET_ID, EXAM_2_SET_ID, OWNER_BASIL_CS_STATS_ID]);
+    expect(next.sets.map((set) => set.id).sort()).toEqual([EXAM_SET_ID, EXAM_2_SET_ID, EXAM_3_SET_ID, OWNER_BASIL_CS_STATS_ID]);
   });
 
   it('tombstones stray flashcard decks and keeps paper and owner sets', () => {
@@ -157,6 +157,7 @@ describe('ensureQuizletLibrary', () => {
     expect(next.sets.map((set) => set.id).sort()).toEqual([
       EXAM_SET_ID,
       EXAM_2_SET_ID,
+      EXAM_3_SET_ID,
       OWNER_BASIL_CS_STATS_ID,
       'paper-abc',
     ]);

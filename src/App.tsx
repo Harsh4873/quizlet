@@ -423,7 +423,6 @@ export default function App() {
       return a.title.localeCompare(b.title);
     });
   const activeSet = route.view === 'set' ? data.sets.find((s) => s.id === route.setId) : undefined;
-  const examSet = data.sets.find((s) => s.id === EXAM_SET_ID);
   const allowOwnerSets =
     syncStatus.state === 'synced'
     || syncStatus.state === 'syncing';
@@ -519,10 +518,6 @@ export default function App() {
             canImport={ownerReady}
             onImport={importItems}
             onAddOwnerBasilSet={addOwnerBasilSet}
-            onLoadSample={() => {
-              if (!examSet) return;
-              openSetCards(EXAM_SET_ID);
-            }}
             onDelete={removeSet}
             onExport={exportSet}
             onOpen={(set) => openSetCards(set.id)}

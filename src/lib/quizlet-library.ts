@@ -86,7 +86,7 @@ function ensureBasilDeck(data: AppData, now: number): AppData {
 }
 
 /**
- * Quizlet ships Exam 1, Exam 2 and Basil CS/stats. Leave `paper-*` (Research) and
+ * Quizlet ships the course exam decks and Basil CS/stats. Leave `paper-*` (Research) and
  * other `owner-*` sets alone, including their markdown. An explicitly imported
  * exam deck is an exception to the bundled fallback. Tombstone every
  * other flashcard set so old decks disappear on sync.

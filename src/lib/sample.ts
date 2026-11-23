@@ -1,5 +1,6 @@
 import examMarkdown from './exam-1.md?raw';
 import exam2Markdown from './exam-2.md?raw';
+import exam3Markdown from './exam-3.md?raw';
 
 /** Fixed study-set id for the Exam 1 deck in Firestore and local storage. */
 export const EXAM_SET_ID = 'exam-1-627';
@@ -14,9 +15,14 @@ export const EXAM_2_SET_ID = 'exam-2-627';
 export const EXAM_2_SET_TITLE = 'Exam 2';
 export const EXAM_2_MARKDOWN = exam2Markdown;
 
+export const EXAM_3_SET_ID = 'exam-3-627';
+export const EXAM_3_SET_TITLE = 'Exam 3';
+export const EXAM_3_MARKDOWN = exam3Markdown;
+
 export const EXAM_DECKS = [
   { id: EXAM_SET_ID, title: EXAM_SET_TITLE, markdown: EXAM_MARKDOWN },
   { id: EXAM_2_SET_ID, title: EXAM_2_SET_TITLE, markdown: EXAM_2_MARKDOWN },
+  { id: EXAM_3_SET_ID, title: EXAM_3_SET_TITLE, markdown: EXAM_3_MARKDOWN },
 ] as const;
 
 export function isExamSetId(id: string): boolean {

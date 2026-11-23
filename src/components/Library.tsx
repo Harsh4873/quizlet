@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { ClipboardPaste, Download, FilePlus2, Search, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import type { AppData, StudyMaterial, StudySet } from '../model';
 import { masteryPercent } from '../lib/store';
-import { EXAM_SET_ID, EXAM_2_SET_ID, EXAM_DECKS, isExamSetId } from '../lib/sample';
+import { EXAM_SET_ID, EXAM_DECKS, isExamSetId } from '../lib/sample';
 import { OWNER_BASIL_CS_STATS_ID, isOwnerSetId } from '../lib/owner-set';
 
 export interface ImportItem {
@@ -20,7 +20,6 @@ interface LibraryProps {
   data: AppData;
   materialFor: (set: StudySet) => StudyMaterial;
   onImport: (items: ImportItem[]) => void;
-  onLoadSample: () => void;
   onDelete: (set: StudySet) => void;
   onExport: (set: StudySet) => void;
   onOpen: (set: StudySet) => void;
@@ -34,7 +33,6 @@ export function Library({
   data,
   materialFor,
   onImport,
-  onLoadSample,
   onDelete,
   onExport,
   onOpen,
@@ -56,7 +54,6 @@ export function Library({
     ? OWNER_BASIL_CS_STATS_ID
     : isExamSetId(importTarget) ? importTarget : EXAM_SET_ID;
   const targetTitle = EXAM_DECKS.find((deck) => deck.id === targetId)?.title ?? 'Exam 1';
-  const exam2 = data.sets.find((set) => set.id === EXAM_2_SET_ID);
   const hasOwnerBasilSet = data.sets.some((set) => set.id === OWNER_BASIL_CS_STATS_ID);
 
   const visible = useMemo(() => {
@@ -169,14 +166,14 @@ export function Library({
           <button type="button" className="btn" disabled={importBusy} onClick={() => fileInput.current?.click()}>
             <Upload size={16} aria-hidden /> Upload a file
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onLoadSample}>
-            <Sparkles size={16} aria-hidden /> Open Exam 1
-          </button>
-          {exam2 && (
-            <button type="button" className="btn btn-ghost" onClick={() => onOpen(exam2)}>
-              <Sparkles size={16} aria-hidden /> Open Exam 2
-            </button>
-          )}
+          {EXAM_DECKS.map((deck) => {
+            const set = data.sets.find((entry) => entry.id === deck.id);
+            return set && (
+              <button key={deck.id} type="button" className="btn btn-ghost" onClick={() => onOpen(set)}>
+                <Sparkles size={16} aria-hidden /> Open {deck.title}
+              </button>
+            );
+          })}
           {allowOwnerSets && !hasOwnerBasilSet && onAddOwnerBasilSet && (
             <button
               type="button"
@@ -204,24 +201,17 @@ export function Library({
         {allowOwnerSets && (
           <fieldset className="import-target">
             <legend className="import-target-label">Import into</legend>
-            <label className="import-target-option">
-              <input
-                type="radio"
-                name="import-target"
-                checked={targetId === EXAM_SET_ID}
-                onChange={() => setImportTarget(EXAM_SET_ID)}
-              />
-              Exam 1
-            </label>
-            <label className="import-target-option">
-              <input
-                type="radio"
-                name="import-target"
-                checked={targetId === EXAM_2_SET_ID}
-                onChange={() => setImportTarget(EXAM_2_SET_ID)}
-              />
-              Exam 2
-            </label>
+            {EXAM_DECKS.map((deck) => (
+              <label key={deck.id} className="import-target-option">
+                <input
+                  type="radio"
+                  name="import-target"
+                  checked={targetId === deck.id}
+                  onChange={() => setImportTarget(deck.id)}
+                />
+                {deck.title}
+              </label>
+            ))}
             <label className="import-target-option">
               <input
                 type="radio"

@@ -32,7 +32,6 @@ describe('home remove button', () => {
       data,
       materialFor: () => emptyMaterial,
       onImport: () => {},
-      onLoadSample: () => {},
       onDelete: () => {},
       onExport: () => {},
       onOpen: () => {},

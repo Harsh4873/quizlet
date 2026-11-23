@@ -61,7 +61,7 @@ describe('Exam 2 publishing', () => {
     const cards = renderToStaticMarkup(createElement(CardsHome, { sets: data.sets.map(set => ({ set, material: materialFor(set) })), onStudy: () => {} }));
     expect(cards).toContain('Exam 2');
     expect(cards).toContain('47 cards');
-    const library = renderToStaticMarkup(createElement(Library, { data, materialFor, onImport: () => {}, onLoadSample: () => {}, onDelete: () => {}, onExport: () => {}, onOpen: () => {}, allowOwnerSets: true, canImport: true }));
+    const library = renderToStaticMarkup(createElement(Library, { data, materialFor, onImport: () => {}, onDelete: () => {}, onExport: () => {}, onOpen: () => {}, allowOwnerSets: true, canImport: true }));
     expect(library).toContain('Open Exam 2');
     expect(library).toContain('Import into');
   });
