@@ -82,6 +82,12 @@ A: For A and B in PSPACE, run their deciders on the original input in sequence, 
 Q: Prove that PSPACE is closed under Kleene star.
 A: Let L be in PSPACE. Accept the empty string. Otherwise enumerate all ways to split the input into nonempty pieces. Accept iff every piece belongs to L for some split, exactly the condition for membership in L∗. A length-n input needs n − 1 bits to record one cut pattern, and the L decider’s polynomial workspace is reused for every piece.
 
+Q: Prove that P is closed under union, concatenation, and complement.
+A: Union: run both polynomial-time deciders on w and accept if either accepts. Concatenation: try all n + 1 splits w = uv, including empty pieces, and accept if A’s decider accepts u and B’s accepts v at the same split; n + 1 polynomial checks take polynomial time. Complement: run the decider and flip its answer, which works because it always halts.
+
+Q: Prove that NP is closed under union and concatenation.
+A: Union: guess which nondeterministic decider to run and simulate it on w; some branch accepts iff w is in either language. Concatenation: guess a split w = uv, allowing empty pieces, then simulate A’s decider on u and, if that branch accepts, B’s on v. Some branch accepts exactly when w ∈ AB, and every branch takes polynomial time.
+
 ## Examples
 
 Q: Prove VERTEX-COVER is in NP using both a verifier and a nondeterministic Turing machine. Use exactly k vertices.
