@@ -22,14 +22,19 @@ describe('Exam 3', () => {
   it('delivers every authored flashcard with its full answer', () => {
     const fronts = [...EXAM_3_MARKDOWN.matchAll(/^Q: (.+)$/gm)].map(match => match[1]);
     const backs = [...EXAM_3_MARKDOWN.matchAll(/^A: (.+)$/gm)].map(match =>
-      match[1].replace(/\[\[fig:[a-z0-9-]+\]\]/g, ' ').replace(/\s+/g, ' ').trim());
+      match[1].replace(/\*\*(.*?)\*\*/g, '$1').replace(/\[\[fig:[a-z0-9-]+\]\]/g, ' ').replace(/\s+/g, ' ').trim());
     const { terms } = extractStudyMaterial(EXAM_3_MARKDOWN);
-    expect(fronts.length).toBeGreaterThan(0);
+    expect(new Set(fronts).size).toBe(28);
+    expect(terms.filter(term => term.answerParts)).toHaveLength(7);
+    expect(terms.filter(term => term.figure)).toHaveLength(3);
     expect(terms.map(term => term.definition)).toEqual(backs);
     expect(terms).toHaveLength(fronts.length);
     for (const [index, term] of terms.entries()) {
       expect(term.source).toBe('qa');
       expect([fronts[index], `${fronts[index]}?`]).toContain(term.term);
+      if (term.answerParts) {
+        expect(term.answerParts.map(part => `${part.label} ${part.text}`).join(' ')).toBe(backs[index]);
+      }
     }
   });
 

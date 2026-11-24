@@ -78,6 +78,8 @@ export interface TermCard {
   id: string;
   term: string;
   definition: string;
+  /** Labeled steps of an authored answer, in reading order. */
+  answerParts?: Array<{ label: string; text: string }>;
   section: string;
   source: TermSource;
   /** Built-in state diagram id, when the card has a picture. */

@@ -4,6 +4,7 @@ import type { SetProgress, StudyMaterial, TermCard } from '../model';
 import { mulberry32, shuffle } from '../lib/questions';
 import { kindOf } from '../lib/card-kinds';
 import { ExamFigure } from './Machine';
+import { FlashcardStage } from './FlashcardStage';
 
 type Filter = 'all' | 'weak' | 'starred';
 type PlaceFilter = 'all' | 'gym' | 'desk';
@@ -224,6 +225,10 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
   const backLabel = termFirst ? answerLabel : promptLabel;
   const frontText = card ? (termFirst ? card.term : card.definition) : '';
   const backText = card ? (termFirst ? card.definition : card.term) : '';
+  const illustrated = Boolean(card?.figure || card?.images?.length);
+  const proofParts = card?.answerParts?.map(({ label, text }, i) => (
+    <span key={i} className="face-proof-part"><strong>{label}</strong> {text}</span>
+  ));
   const deckIds = new Set(deck.map((item) => item.id));
   const gymCount = material.terms.filter((card) => kindOf(card)?.place === 'gym').length;
   const exampleCount = material.terms.filter((card) => kindOf(card)?.place === 'desk').length;
@@ -280,9 +285,7 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
       <div className="progress-track" aria-hidden>
         <div className="progress-fill" style={{ width: `${(index / deck.length) * 100}%` }} />
       </div>
-      <div className="card-counter">
-        {index + 1} / {deck.length}
-      </div>
+      <FlashcardStage position={index + 1} total={deck.length}>
 
       {card && (
         <button
@@ -333,7 +336,8 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
           <span className="flashcard-inner">
             <span className="flashcard-face flashcard-front" aria-hidden={flipped || undefined}>
               <span className="face-label">{frontLabel}</span>
-              <span className={`face-text ${textSizeClass(frontText)}`}>{frontText}</span>
+              <span className={`face-text ${!termFirst && illustrated ? 'face-text-with-figure' : textSizeClass(frontText)}`}>{!termFirst && proofParts ? proofParts : frontText}</span>
+              {!termFirst && card.figure ? <ExamFigure id={card.figure} /> : null}
               {!termFirst && card.images?.map((img, i) => (
                 <img className="card-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
               ))}
@@ -341,11 +345,11 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
             </span>
             <span className="flashcard-face flashcard-back" aria-hidden={!flipped || undefined}>
               <span className="face-label">{backLabel}</span>
-              <span className={`face-text ${card.figure || card.images?.length ? 'face-text-with-figure' : textSizeClass(backText)}`}>{backText}</span>
+              <span className={`face-text ${termFirst && illustrated ? 'face-text-with-figure' : textSizeClass(backText)}`}>{termFirst && proofParts ? proofParts : backText}</span>
               {termFirst && card.images?.map((img, i) => (
                 <img className="card-import-image" src={img.src} alt={img.alt} key={i} loading="lazy" />
               ))}
-              {card.figure ? <ExamFigure id={card.figure} /> : null}
+              {termFirst && card.figure ? <ExamFigure id={card.figure} /> : null}
               <span className="face-section">
                 {info ? `${info.heading} · ${info.place === 'gym' ? 'gym' : 'desk'}` : card.section}
               </span>
@@ -392,6 +396,8 @@ export function Flashcards({ material, progress, onAnswer, onToggleStar, startIn
           <ArrowRight size={18} aria-hidden />
         </button>
       </div>
+
+      </FlashcardStage>
 
       <label className="card-search">
         <Search size={16} aria-hidden />

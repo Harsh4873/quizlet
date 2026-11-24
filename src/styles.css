@@ -2406,8 +2406,84 @@ textarea.review-input {
 }
 
 .flashcards .card-counter {
-  text-align: center;
-  margin-bottom: 14px;
+  margin: 0;
+}
+
+.flashcard-stage-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.flashcard-stage-dialog {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.flashcard-stage-dialog::backdrop {
+  background: var(--bg);
+}
+
+.flashcard-stage-expanded {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(8px, 2vh, 18px);
+  width: 100%;
+  height: 100%;
+  padding: clamp(10px, 2vw, 32px);
+  padding-bottom: max(clamp(10px, 2vw, 32px), env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.flashcard-stage-expanded .flashcard-stage-heading,
+.flashcard-stage-expanded .card-controls {
+  margin: 0;
+}
+
+.flashcard-stage-expanded .flashcard,
+.flashcard-stage-expanded .flashcard.has-figure {
+  height: 100%;
+  min-height: 0;
+}
+
+.flashcard-stage-expanded .flashcard .flashcard-face {
+  padding: clamp(16px, 3vw, 52px);
+  overscroll-behavior: contain;
+}
+
+.flashcard-stage-expanded .flashcard-face > .face-text,
+.flashcard-stage-expanded .flashcard-face > .card-figure {
+  width: min(100%, 68ch);
+  align-self: center;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+
+.flashcard-stage-expanded .face-text {
+  font-size: clamp(22px, 3vw, 42px);
+}
+
+.flashcard-stage-expanded .face-text-long,
+.flashcard-stage-expanded .face-text-xlong,
+.flashcard-stage-expanded .face-text-with-figure {
+  font-size: clamp(17px, 1.8vw, 26px);
+  line-height: 1.48;
+  text-align: left;
+  text-wrap: pretty;
 }
 
 .flashcard {
@@ -2753,6 +2829,17 @@ textarea.review-input {
   font-size: clamp(15px, 2vw, 18px);
   font-weight: 600;
   line-height: 1.45;
+}
+
+.face-proof-part {
+  display: block;
+  text-align: left;
+  text-wrap: pretty;
+  font-weight: 400;
+}
+
+.face-proof-part + .face-proof-part {
+  margin-top: 0.65em;
 }
 
 /* ---------- Card labels ---------- */

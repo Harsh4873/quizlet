@@ -188,6 +188,22 @@ function concise(text: string, maximum = 420): string {
   return `${clipped.slice(0, Math.max(1, end)).trim()}…`;
 }
 
+function labeledAnswer(definition: string, inlines: Inline[]): TermCard['answerParts'] {
+  const labels = inlines.flatMap((run, index) =>
+    run.kind === 'bold' && run.text.endsWith('.') ? [index] : []);
+  const first = labels.findIndex(index => definition.startsWith(inlines[index].text));
+  if (first < 0 || labels.length - first < 2) return;
+  const parts = labels.slice(first).map((index, offset) => ({
+    label: inlines[index].text,
+    text: splitFigure(plainText(inlines.slice(index + 1, labels[first + offset + 1]))).definition,
+  }));
+  // Keep the plain answer authoritative, even when a question also contains bold text.
+  if (parts.every(part => part.text) &&
+      parts.map(part => `${part.label} ${part.text}`).join(' ') === splitFigure(definition).definition) {
+    return parts;
+  }
+}
+
 function questionFromHeading(heading: string): string {
   const clean = heading.replace(/^\d+(?:\.\d+)*[.)]?\s*/, '').trim();
   if (/[?？]/.test(clean)) return clean;
@@ -264,11 +280,13 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
     section: string,
     source: TermSource,
     images?: TermCard['images'],
+    answerInlines?: Inline[],
   ) => {
     if (terms.length >= MAX_TERMS) return;
     const termKey = normalizeKey(term);
     if (!termKey) return;
-    const split = splitFigure(concise(definition));
+    const answerParts = answerInlines && labeledAnswer(definition, answerInlines);
+    const split = splitFigure(answerParts ? definition : concise(definition));
     const cleanDef = split.definition;
     if (cleanDef.length < 4 && !(source === 'qa' && /^[A-Z0-9]{2,4}$/.test(cleanDef))) return;
     // Authored Q/A may ask the same prompt for two separate facts. Keep both;
@@ -290,6 +308,7 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
       id: hashId(`term|${key}|${normalizeKey(cleanDef).slice(0, 40)}`),
       term: term.trim(),
       definition: cleanDef,
+      answerParts,
       section,
       source,
       figure: split.figure,
@@ -318,21 +337,21 @@ export function extractStudyMaterial(markdown: string): StudyMaterial {
       // "Q: ...? A: ..." on adjacent lines gets merged into one paragraph.
       const inline = q[1].match(/^(.*?[?.!])\s+(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i);
       if (inline) {
-        addTerm(ensureQuestionMark(inline[1]), inline[2].trim(), unit.section, 'qa', imagesOf(unit.inlines));
+        addTerm(ensureQuestionMark(inline[1]), inline[2].trim(), unit.section, 'qa', imagesOf(unit.inlines), unit.inlines);
         defUnitTexts.add(unit.text);
         continue;
       }
       // Same merge, but the prompt has extra text after ? / . / ! (for example an ASR hint).
       const trailing = q[1].match(/^(.*?)\s+(?:a|answer)\s*(?:\d+)?\s*[:.)\-–—]\s*(.+)$/i);
       if (trailing && trailing[2].trim().length >= 4) {
-        addTerm(ensureQuestionMark(trailing[1]), trailing[2].trim(), unit.section, 'qa', imagesOf(unit.inlines));
+        addTerm(ensureQuestionMark(trailing[1]), trailing[2].trim(), unit.section, 'qa', imagesOf(unit.inlines), unit.inlines);
         defUnitTexts.add(unit.text);
         continue;
       }
       const next = units[i + 1];
       const a = next?.text.match(ANSWER_RE);
       if (a) {
-        addTerm(ensureQuestionMark(q[1]), a[1].trim(), unit.section, 'qa', imagesOf(next.inlines));
+        addTerm(ensureQuestionMark(q[1]), a[1].trim(), unit.section, 'qa', imagesOf(next.inlines), next.inlines);
         defUnitTexts.add(unit.text).add(next.text);
         i += 1;
         continue;
